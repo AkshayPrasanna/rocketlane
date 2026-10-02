@@ -21,6 +21,7 @@ const MOCK_TEMPLATE_IDS: Record<PlanTier, string> = {
   growth: "mock-template-growth",
 };
 const MOCK_OWNER_EMAIL = "owner@mock.test";
+export const SIMULATED_OPS_CHANNEL = "ops-escalations";
 
 /**
  * Templates are what get mixed up in the manual process, so the two IDs are checked here:
@@ -69,7 +70,10 @@ export function buildSettings(env: Env): PipelineSettings {
     callRetryDelaySeconds: env.call.retryDelaySeconds,
     gmailProcessedLabel: env.gmailProcessedLabel,
     maxCallAttempts: env.call.maxAttempts,
-    opsChannelId: env.opsSlackChannelId ?? null,
+    // With Slack simulated, escalation alerts still need somewhere to land.
+    opsChannelId:
+      env.opsSlackChannelId ??
+      (env.modes.slack === "mock" ? SIMULATED_OPS_CHANNEL : null),
     plans,
     retry: env.retry,
     rocketlaneOwnerEmail: env.rocketlane.ownerEmail ?? MOCK_OWNER_EMAIL,

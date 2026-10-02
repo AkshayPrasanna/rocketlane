@@ -2,13 +2,7 @@ import { IntegrationError } from "../errors";
 import { FaultInjector } from "../fault-injector";
 import type { GmailClient, GmailMessage, ReplyInput } from "./types";
 
-export type GmailOp =
-  | "getMessage"
-  | "fetchHistory"
-  | "searchMessageIds"
-  | "replyInThread"
-  | "addLabel"
-  | "startWatch";
+export type GmailOp = "getMessage" | "replyInThread" | "addLabel";
 
 export interface DeliverInput {
   bodyText: string;
@@ -16,6 +10,7 @@ export interface DeliverInput {
   fromName?: string | null;
   generatedByAgent?: boolean;
   labelIds?: string[];
+  senderAuthentication?: "pass" | "fail" | "unknown";
   subject: string;
 }
 
@@ -46,6 +41,7 @@ export class MockGmailClient implements GmailClient {
         Date.UTC(2026, 9, 2, 10, this.counter)
       ).toISOString(),
       rfc822MessageId: `<${id}@mail.test>`,
+      senderAuthentication: input.senderAuthentication ?? "pass",
       subject: input.subject,
       threadId: `thread-${id}`,
     });
@@ -64,27 +60,6 @@ export class MockGmailClient implements GmailClient {
     return Promise.resolve(message);
   }
 
-  fetchHistory(
-    startHistoryId: string
-  ): Promise<{ historyId: string; messageIds: string[] }> {
-    this.faults.check("fetchHistory");
-    const from = Number(startHistoryId);
-    return Promise.resolve({
-      historyId: String(this.order.length),
-      messageIds: this.order.slice(Number.isNaN(from) ? 0 : from),
-    });
-  }
-
-  searchMessageIds(_query: string): Promise<string[]> {
-    this.faults.check("searchMessageIds");
-    return Promise.resolve(
-      this.order.filter((id) => {
-        const labels = this.messages.get(id)?.labelIds ?? [];
-        return !labels.includes("processed");
-      })
-    );
-  }
-
   replyInThread(input: ReplyInput): Promise<{ messageId: string }> {
     this.faults.check("replyInThread");
     this.counter += 1;
@@ -101,13 +76,5 @@ export class MockGmailClient implements GmailClient {
       message.labelIds.push(labelName);
     }
     return Promise.resolve();
-  }
-
-  startWatch(): Promise<{ expiresAt: string; historyId: string }> {
-    this.faults.check("startWatch");
-    return Promise.resolve({
-      expiresAt: "2026-10-09T10:00:00.000Z",
-      historyId: String(this.order.length),
-    });
   }
 }

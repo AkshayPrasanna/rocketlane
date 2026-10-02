@@ -95,6 +95,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      '@workflow/vitest':
+        specifier: 4.0.5
+        version: 4.0.5(@opentelemetry/api@1.9.1)(vite@8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.19.19)(msw@2.14.6(@types/node@22.19.19)(typescript@6.0.3))(vite@8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)))(zod@4.4.3)
       autoprefixer:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
@@ -2492,6 +2495,15 @@ packages:
 
   '@workflow/vite@4.0.4':
     resolution: {integrity: sha512-dEw5Dg6zdlsBwwEFYYqRIXApZ4kgqN/vMzZEyEbisJEofKNPDIYP1/nAh22DkYW55Nxa0YOKdqnhxQq+kdvX2A==}
+
+  '@workflow/vitest@4.0.5':
+    resolution: {integrity: sha512-KWYTjyzX6s+NLhh0I8fG72McQbxVT8wvIfiD8dao686znBdQgKd3t2b1dayNaQKrzWvNwtHd3Kwzg465cxIQFg==}
+    peerDependencies:
+      vite: '>=6.0.0'
+      vitest: '>=3.0.0'
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   '@workflow/web@4.1.5':
     resolution: {integrity: sha512-VBdRdOBIs/TsS79TxhnjnYcmXKIOwR57gWL+n/0GSvd7aaMHcvKBybmRUTMYOe0q110KXs31eJ4aLjWLYLQxGA==}
@@ -7377,7 +7389,7 @@ snapshots:
       semver: 7.8.0
       slash: 3.0.0
       source-map: 0.7.6
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
     optionalDependencies:
       chokidar: 5.0.0
     transitivePeerDependencies:
@@ -7829,6 +7841,22 @@ snapshots:
       - '@swc/helpers'
       - supports-color
 
+  '@workflow/vitest@4.0.5(@opentelemetry/api@1.9.1)(vite@8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))(vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.19.19)(msw@2.14.6(@types/node@22.19.19)(typescript@6.0.3))(vite@8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)))(zod@4.4.3)':
+    dependencies:
+      '@workflow/builders': 4.0.5(@opentelemetry/api@1.9.1)
+      '@workflow/core': 4.2.4(@opentelemetry/api@1.9.1)
+      '@workflow/rollup': 4.0.4(@opentelemetry/api@1.9.1)
+      '@workflow/world': 4.1.1(zod@4.4.3)
+      '@workflow/world-local': 4.1.1(@opentelemetry/api@1.9.1)
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@22.19.19)(msw@2.14.6(@types/node@22.19.19)(typescript@6.0.3))(vite@8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
+    optionalDependencies:
+      vite: 8.3.1(@types/node@22.19.19)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@swc/helpers'
+      - supports-color
+      - zod
+
   '@workflow/web@4.1.5':
     dependencies:
       express: 4.22.2
@@ -7864,6 +7892,11 @@ snapshots:
     dependencies:
       ulid: 3.0.2
       zod: 4.3.6
+
+  '@workflow/world@4.1.1(zod@4.4.3)':
+    dependencies:
+      ulid: 3.0.2
+      zod: 4.4.3
 
   '@xhmikosr/archive-type@7.1.0':
     dependencies:

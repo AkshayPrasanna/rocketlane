@@ -86,6 +86,17 @@ export class MemoryRedis implements RedisLike {
     return Promise.resolve();
   }
 
+  zrem(key: string, member: string): Promise<void> {
+    const entries = this.sorted.get(key);
+    if (entries) {
+      this.sorted.set(
+        key,
+        entries.filter((entry) => entry.member !== member)
+      );
+    }
+    return Promise.resolve();
+  }
+
   zrange(
     key: string,
     start: number,

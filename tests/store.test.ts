@@ -74,12 +74,10 @@ describe("idempotency claims", () => {
 
 describe("deals", () => {
   it("creates a deal in RECEIVED and refuses to overwrite it", async () => {
-    await store.deals.createDeal(deal("m1"));
+    expect(await store.deals.createDeal(deal("m1"))).toBe(true);
 
     expect((await store.deals.getDeal("m1"))?.state).toBe("RECEIVED");
-    await expect(store.deals.createDeal(deal("m1"))).rejects.toThrow(
-      "already exists"
-    );
+    expect(await store.deals.createDeal(deal("m1"))).toBe(false);
   });
 
   it("returns null for an unknown deal", async () => {
@@ -168,7 +166,59 @@ describe("escalations", () => {
   });
 });
 
-describe("call executions and gmail state", () => {
+describe("workflow start lease", () => {
+  it("lets one caller start the workflow and blocks the rest", async () => {
+    expect(await store.deals.claimWorkflowStart("m1", 120)).toBe(true);
+    expect(await store.deals.claimWorkflowStart("m1", 120)).toBe(false);
+  });
+
+  it("lets a later caller retry once the lease is released", async () => {
+    await store.deals.claimWorkflowStart("m1", 120);
+
+    await store.deals.releaseWorkflowStart("m1");
+
+    expect(await store.deals.claimWorkflowStart("m1", 120)).toBe(true);
+  });
+});
+
+describe("mail bridge store", () => {
+  const reply = (id: string, queuedAt: string) => ({
+    bodyText: "Please send the missing details",
+    id,
+    inReplyTo: "<abc@mail.test>",
+    messageId: "msg-1",
+    queuedAt,
+    subject: "Re: Deal closed",
+    threadId: "thread-1",
+    to: "ae@novacrm.io",
+  });
+
+  it("returns pending replies oldest first and forgets acked ones", async () => {
+    await store.mail.queueReply(reply("r2", "2026-10-02T10:02:00.000Z"));
+    await store.mail.queueReply(reply("r1", "2026-10-02T10:01:00.000Z"));
+
+    expect((await store.mail.listPendingReplies(10)).map((r) => r.id)).toEqual([
+      "r1",
+      "r2",
+    ]);
+
+    await store.mail.ackReplies(["r1", "never-existed"]);
+    await store.mail.ackReplies(["r1"]);
+
+    expect((await store.mail.listPendingReplies(10)).map((r) => r.id)).toEqual([
+      "r2",
+    ]);
+  });
+
+  it("honours the page size", async () => {
+    await store.mail.queueReply(reply("r1", "2026-10-02T10:01:00.000Z"));
+    await store.mail.queueReply(reply("r2", "2026-10-02T10:02:00.000Z"));
+
+    expect(await store.mail.listPendingReplies(1)).toHaveLength(1);
+  });
+});
+
+describe("call executions", () => {
   it("maps an execution back to its deal and hook", async () => {
     const mapping = {
       attempt: 2,
@@ -180,13 +230,5 @@ describe("call executions and gmail state", () => {
 
     expect(await store.deals.getCallExecution("exec-1")).toEqual(mapping);
     expect(await store.deals.getCallExecution("exec-9")).toBeNull();
-  });
-
-  it("round-trips a numeric-looking Gmail history ID as a string", async () => {
-    expect(await store.deals.getGmailHistoryId()).toBeNull();
-
-    await store.deals.setGmailHistoryId("1234567890123456789");
-
-    expect(await store.deals.getGmailHistoryId()).toBe("1234567890123456789");
   });
 });

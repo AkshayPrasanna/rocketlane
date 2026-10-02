@@ -12,6 +12,12 @@ export function proxy(request: NextRequest) {
     );
   }
 
+  // The workflow runtime calls these itself to run steps; sending it to the sign-in page
+  // would stop every workflow. They are authenticated by the runtime, not by a session.
+  if (pathname.startsWith("/.well-known/workflow/")) {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/api/") || pathname.startsWith("/sign-in")) {
     return NextResponse.next();
   }

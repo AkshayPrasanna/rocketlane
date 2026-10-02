@@ -29,9 +29,9 @@ export async function registerMessage(
   }
 
   const claimed = await deps.store.deals.claimMessage(message.id, message.id);
-  if (!claimed) {
-    const existing = await deps.store.deals.getDeal(message.id);
-    await systemAuditor(existing?.runId ?? null).record({
+  const existing = claimed ? null : await deps.store.deals.getDeal(message.id);
+  if (existing) {
+    await systemAuditor(existing.runId).record({
       input: { messageId: message.id },
       outcome: "skipped",
       output: { action: "none" },
@@ -43,9 +43,11 @@ export async function registerMessage(
   }
 
   // One correlation ID ties every audit entry for this email together, from receipt on.
+  // (If an earlier attempt claimed the message but crashed before creating the deal, we get
+  // here with `claimed` false and no deal, and simply finish the job.)
   const runId = deps.newId();
   const system = systemAuditor(runId);
-  await deps.store.deals.createDeal({
+  const created = await deps.store.deals.createDeal({
     ...newDeal(
       {
         aeEmail: message.from.email,
@@ -57,6 +59,10 @@ export async function registerMessage(
     ),
     runId,
   });
+  if (!created) {
+    // A concurrent delivery won the race to create the deal.
+    return { dealId: message.id, status: "duplicate" };
+  }
   await system.record({
     input: {
       from: message.from.email,
@@ -99,5 +105,33 @@ export async function registerMessage(
     return { dealId: message.id, status: "escalated" };
   }
 
+  if (message.senderAuthentication === "fail") {
+    await escalate(deps, {
+      agent: "intake",
+      dealId: message.id,
+      detail: `Gmail's checks (DKIM, SPF, DMARC) did not pass for ${message.from.email}, so the sender may be forged. The email was not read by the model and no one was called.`,
+      input: { sender: message.from.email },
+      rationale:
+        "The AE is identified by the sender address, which can be spoofed. An address that fails email authentication is not trusted.",
+      reason: "SENDER_NOT_AUTHENTICATED",
+      step: "verify_sender",
+      toState: "ESCALATED_TO_HUMAN",
+    });
+    return { dealId: message.id, status: "escalated" };
+  }
+
+  await system.with({ agent: "intake" }).record({
+    input: { sender: message.from.email },
+    outcome: "info",
+    output: {
+      authentication: message.senderAuthentication,
+      knownAe: ae.name,
+    },
+    rationale:
+      message.senderAuthentication === "pass"
+        ? "Sender is a known AE and passed Gmail's email authentication."
+        : "Sender is a known AE. Gmail reported no authentication result, so the address alone was accepted.",
+    step: "verify_sender",
+  });
   return { dealId: message.id, status: "registered" };
 }

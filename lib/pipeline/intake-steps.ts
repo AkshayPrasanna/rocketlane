@@ -104,6 +104,7 @@ export async function parseAndValidate(
     await deps.gmail.replyInThread({
       bodyText: reply.bodyText,
       inReplyTo: message.rfc822MessageId,
+      messageId: message.id,
       subject: reply.subject,
       threadId: message.threadId,
       to: message.from.email,

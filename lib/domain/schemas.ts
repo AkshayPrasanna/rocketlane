@@ -63,6 +63,8 @@ export const dealRecordSchema = z.object({
   parsed: parsedDealSchema.nullable(),
   planTier: planTierSchema.nullable(),
   project: projectRefSchema.nullable(),
+  /** Set once the onboarding workflow has been started, so an email never starts two. */
+  workflowRunId: z.string().nullable(),
   /** Set just before the Rocketlane create call; lets a retry recognise its own project. */
   projectRequestedAt: isoTimestamp.nullable(),
   runId: z.string().nullable(),
@@ -90,6 +92,7 @@ export const ESCALATION_REASONS = [
   "DUPLICATE_PROJECT",
   "ROCKETLANE_FAILURE",
   "SLACK_FAILURE",
+  "SENDER_NOT_AUTHENTICATED",
 ] as const;
 export const escalationReasonSchema = z.enum(ESCALATION_REASONS);
 export type EscalationReason = z.infer<typeof escalationReasonSchema>;
@@ -146,3 +149,59 @@ export const callExecutionSchema = z.object({
   hookToken: z.string(),
 });
 export type CallExecutionMapping = z.infer<typeof callExecutionSchema>;
+
+/** What the simulated Slack keeps so the dashboard can show what production would post. */
+export const simulatedChannelSchema = z.object({
+  channelId: z.string(),
+  createdAt: isoTimestamp,
+  name: z.string(),
+  purpose: z.string(),
+  topic: z.string(),
+  url: z.string().nullable(),
+});
+export type SimulatedChannel = z.infer<typeof simulatedChannelSchema>;
+
+export const simulatedMessageSchema = z.object({
+  channelId: z.string(),
+  postedAt: isoTimestamp,
+  text: z.string(),
+  ts: z.string(),
+});
+export type SimulatedMessage = z.infer<typeof simulatedMessageSchema>;
+
+export const simulatedInviteSchema = z.object({
+  channelId: z.string(),
+  email: z.string(),
+  invitedAt: isoTimestamp,
+});
+export type SimulatedInvite = z.infer<typeof simulatedInviteSchema>;
+
+/** An email the Gmail bridge script handed to us. Mirrors GmailMessage. */
+export const inboundMessageSchema = z.object({
+  bodyText: z.string(),
+  from: z.object({ email: z.string().min(1), name: z.string().nullable() }),
+  generatedByAgent: z.boolean(),
+  id: z.string().min(1),
+  labelIds: z.array(z.string()),
+  receivedAt: isoTimestamp,
+  rfc822MessageId: z.string().nullable(),
+  senderAuthentication: z.enum(["pass", "fail", "unknown"]),
+  subject: z.string(),
+  threadId: z.string().min(1),
+});
+
+export type InboundMessage = z.infer<typeof inboundMessageSchema>;
+
+/** A reply the pipeline wants sent. The bridge script collects and sends it from the CS inbox. */
+export const outboundReplySchema = z.object({
+  bodyText: z.string().min(1),
+  id: z.string().min(1),
+  inReplyTo: z.string().nullable(),
+  /** The Gmail message being answered. Replying to this message keeps the reply in the thread. */
+  messageId: z.string().min(1),
+  queuedAt: isoTimestamp,
+  subject: z.string(),
+  threadId: z.string().min(1),
+  to: z.string().min(1),
+});
+export type OutboundReply = z.infer<typeof outboundReplySchema>;

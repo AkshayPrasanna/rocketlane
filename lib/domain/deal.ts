@@ -28,5 +28,6 @@ export function newDeal(input: NewDealInput, now: Date): DealRecord {
     stateReason: "Email received",
     subject: input.subject,
     updatedAt: timestamp,
+    workflowRunId: null,
   };
 }

@@ -43,6 +43,9 @@ export function createUpstashRedis(credentials: {
     async zadd(key, score, member) {
       await redis.zadd(key, { member, score });
     },
+    async zrem(key, member) {
+      await redis.zrem(key, member);
+    },
     async zrange(key, start, stop, options) {
       return await redis.zrange<string[]>(key, start, stop, {
         rev: options?.rev,

@@ -124,6 +124,7 @@ describe("happy path: Enterprise deal", () => {
 
     expect(await h.auditSteps(messageId)).toEqual([
       "receive_email",
+      "verify_sender",
       "workflow_started",
       "parse_email",
       "validate_deal",

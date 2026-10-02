@@ -58,6 +58,11 @@ const envSchema = z.object({
   RETRY_MAX_ATTEMPTS: positiveInt(4, 10),
   RETRY_BASE_DELAY_SECONDS: positiveInt(5, 3600),
 
+  GMAIL_BRIDGE_SECRET: z.string().min(16).optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
+  BOLNA_WEBHOOK_SECRET: z.string().min(16).optional(),
+  BOLNA_WEBHOOK_IP_CHECK: z.enum(["enforce", "off"]).default("enforce"),
+
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   KV_REST_API_URL: z.url().optional(),
@@ -74,6 +79,7 @@ export interface Env {
   };
   aiModel: string;
   appUrl: string | undefined;
+  bolnaWebhookIpCheck: "enforce" | "off";
   call: {
     maxAttempts: number;
     resultTimeoutSeconds: number;
@@ -95,6 +101,12 @@ export interface Env {
   rocketlane: {
     ownerEmail: string | undefined;
     templateIds: { enterprise: string | undefined; growth: string | undefined };
+  };
+  /** Shared secrets for inbound routes. Each route refuses requests when its secret is unset. */
+  secrets: {
+    adminPassword: string | undefined;
+    bolnaWebhook: string | undefined;
+    gmailBridge: string | undefined;
   };
 }
 
@@ -126,6 +138,7 @@ export function parseEnv(source: EnvSource): Env {
     },
     aiModel: raw.AI_MODEL,
     appUrl: raw.APP_URL,
+    bolnaWebhookIpCheck: raw.BOLNA_WEBHOOK_IP_CHECK,
     csmNames: {
       enterprise: raw.ENTERPRISE_CSM_NAME,
       growth: raw.GROWTH_CSM_POOL_NAME,
@@ -156,6 +169,11 @@ export function parseEnv(source: EnvSource): Env {
       },
     },
     redis: redisUrl && redisToken ? { token: redisToken, url: redisUrl } : null,
+    secrets: {
+      adminPassword: raw.ADMIN_PASSWORD,
+      bolnaWebhook: raw.BOLNA_WEBHOOK_SECRET,
+      gmailBridge: raw.GMAIL_BRIDGE_SECRET,
+    },
   };
 }
 

@@ -253,6 +253,7 @@ export async function complete(
       await deps.gmail.replyInThread({
         bodyText: email.bodyText,
         inReplyTo: null,
+        messageId: deal.gmailMessageId,
         subject: email.subject,
         threadId: deal.gmailThreadId,
         to: deal.aeEmail,

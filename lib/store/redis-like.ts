@@ -22,4 +22,5 @@ export interface RedisLike {
     stop: number,
     options?: { rev?: boolean }
   ): Promise<string[]>;
+  zrem(key: string, member: string): Promise<void>;
 }

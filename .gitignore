@@ -47,3 +47,7 @@ next-env.d.ts
 # Vercel
 .vercel
 .env*.local
+
+# Workflow DevKit local data and test build output
+.workflow-data/
+.workflow-vitest/

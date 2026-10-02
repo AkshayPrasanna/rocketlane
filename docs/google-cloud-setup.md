@@ -51,11 +51,13 @@ Open <https://console.cloud.google.com/apis/library/gmail.googleapis.com>, check
    ```
 
    `gmail.modify` lets the app read mail, apply the "processed" label and send replies. `gmail.labels` lets it create that label.
-6. Left menu → **Audience** → **Publish app** → **Confirm**. The status must read **In production**.
+6. Left menu → **Audience**. **Leave the status on Testing** (do not click *Publish app*). Under **Test users** click **Add users**, enter the CS inbox address, and **Save**.
 
-   **Do not leave it on Testing.** In Testing, Google expires the refresh token after 7 days ([Google docs](https://developers.google.com/identity/protocols/oauth2)), which would break the demo. Publishing without verification is fine for one personal account. You will see an "unverified app" warning once.
+   Without this step, authorising later fails with `Error 403: access_denied`. Even the project owner has to be listed.
 
-**Checkpoint:** the Audience page shows *Publishing status: In production*.
+   **Why not publish?** Publishing an external app needs the Branding page to have an app homepage URL and a privacy-policy URL on an authorised domain, and Google's own docs call these "required for all external production apps". That is a lot of setup for a demo. The only cost of staying in Testing is that Google expires the refresh token **7 days** after you authorise ([Google docs](https://developers.google.com/identity/protocols/oauth2)). For a short-lived demo that is fine. If a call ever fails with `invalid_grant`, redo stage 5 and paste in the new token.
+
+**Checkpoint:** the Audience page shows *Publishing status: Testing* and your CS inbox address under *Test users*.
 
 ## Stage 4: Create the OAuth client
 
@@ -140,15 +142,20 @@ Put them in `.env.local` and in Vercel's environment variables. Never in `.env.e
 | Symptom | Likely cause and fix |
 | --- | --- |
 | Playground says `redirect_uri_mismatch` | The redirect URI in stage 4 must be exactly `https://developers.google.com/oauthplayground`, no trailing slash. |
-| `Error 403: access_denied` when authorising | The app is still in **Testing** and the account is not a test user. Publish it (stage 3, step 6). |
+| `Error 403: access_denied` when authorising | The account is not listed as a test user. Add it under *Audience → Test users* (stage 3, step 6). |
+| "To publish your app, you must complete your configuration on the Branding page" | You clicked *Publish app*. You don't need to. Stay in Testing and add yourself as a test user (stage 3, step 6). |
 | No refresh token appears in Step 2 | Google only issues one on first consent. Revoke the app at <https://myaccount.google.com/permissions> and repeat stage 5 with *Access type: Offline*. |
-| `invalid_grant` from the curl check | Token revoked, wrong client ID or secret, or the app sat in Testing for over 7 days. Redo stage 5. |
+| `invalid_grant` from the curl check or from the app | Token revoked, wrong client ID or secret, or more than 7 days have passed since you authorised (Testing mode). Redo stage 5 and update `GOOGLE_REFRESH_TOKEN` in `.env.local` and Vercel. |
 | Poll endpoint returns 401 | `POLL_SECRET` differs between the pinger header and the app, or Vercel is blocking the URL (add the bypass header). |
 | Emails arrive but nothing starts | The email does not match `GMAIL_POLL_QUERY` (default: the inbox, last 2 days, subject containing "deal closed"), or it was already processed. |
 
 ---
 
-## Appendix: upgrading to Pub/Sub push (not needed for the demo)
+## Appendix A: a token that does not expire (production status)
+
+To remove the 7-day limit, publish the app. The Branding page must then have a valid app name, support email, **homepage URL** and **privacy-policy URL**, plus the domain of those links under *Authorized domains* (add the domain first). Hosting a short privacy page on the deployed app and adding its domain would satisfy this. After that, *Audience → Publish app* works. Skipped for the demo.
+
+## Appendix B: upgrading to Pub/Sub push (not needed for the demo)
 
 Polling costs up to a minute of latency and one cheap API call per poll. In production you would replace it with Gmail push notifications:
 

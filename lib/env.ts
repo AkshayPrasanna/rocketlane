@@ -32,7 +32,7 @@ const envSchema = z.object({
   ROCKETLANE_MODE: modeSchema,
   SLACK_MODE: modeSchema,
 
-  AI_MODEL: z.string().min(1).default("anthropic/claude-sonnet-4-20250514"),
+  AI_MODEL: z.string().min(1).default("anthropic/claude-sonnet-5.5"),
 
   AE_DEMO_EMAIL: z.email().optional(),
   AE_DEMO_NAME: z.string().min(1).optional(),

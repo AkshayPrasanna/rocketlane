@@ -1,6 +1,13 @@
 "use client";
 
-import { Bot, LayoutDashboard, LogOut } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  Download,
+  LayoutDashboard,
+  LogOut,
+  MessageSquareText,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -17,11 +24,15 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { authClient } from "@/lib/auth-client";
 
 const navItems = [
-  { href: "/" as const, label: "Deals", icon: LayoutDashboard },
+  { href: "/" as const, icon: LayoutDashboard, label: "Deals" },
+  { href: "/escalations" as const, icon: AlertTriangle, label: "Escalations" },
+  {
+    href: "/slack" as const,
+    icon: MessageSquareText,
+    label: "Slack (simulated)",
+  },
 ];
 
 export function Sidebar({ appName }: { appName: string }) {
@@ -37,7 +48,7 @@ export function Sidebar({ appName }: { appName: string }) {
               {appName}
             </span>
             <span className="block text-[11px] text-muted-foreground">
-              Admin panel
+              Onboarding agents
             </span>
           </div>
         </div>
@@ -50,35 +61,33 @@ export function Sidebar({ appName }: { appName: string }) {
               <Suspense>
                 <NavItems onNavigate={() => setOpenMobile(false)} />
               </Suspense>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Download the audit log as JSONL"
+                >
+                  <a download href="/api/audit/export">
+                    <Download />
+                    <span>Export audit log</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarSeparator className="mx-0" />
       <SidebarFooter>
-        <SidebarMenu>
-          <Suspense fallback={<UserProfileSkeleton />}>
-            <UserProfile />
-          </Suspense>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() =>
-                authClient.signOut({
-                  fetchOptions: {
-                    onSuccess: () => {
-                      window.location.href = "/sign-in";
-                    },
-                  },
-                })
-              }
-              size="sm"
-              tooltip="Sign out"
-            >
-              <LogOut />
-              <span>Sign out</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <form action="/api/logout" method="post">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="sm" tooltip="Sign out" type="submit">
+                <LogOut />
+                <span>Sign out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </form>
       </SidebarFooter>
     </SidebarRoot>
   );
@@ -89,7 +98,9 @@ function NavItems({ onNavigate }: { onNavigate: () => void }) {
 
   return navItems.map((item) => {
     const isActive =
-      item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+      item.href === "/"
+        ? pathname === "/" || pathname.startsWith("/deals")
+        : pathname.startsWith(item.href);
     return (
       <SidebarMenuItem key={item.href}>
         <SidebarMenuButton
@@ -106,32 +117,4 @@ function NavItems({ onNavigate }: { onNavigate: () => void }) {
       </SidebarMenuItem>
     );
   });
-}
-
-function UserProfile() {
-  const { data: session } = authClient.useSession();
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton className="cursor-default hover:bg-transparent active:bg-transparent">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sidebar-accent font-medium text-[10px]">
-          {session?.user?.name?.charAt(0)?.toUpperCase() || "?"}
-        </div>
-        <span className="truncate font-medium text-xs">
-          {session?.user?.name}
-        </span>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
-}
-
-function UserProfileSkeleton() {
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton className="cursor-default">
-        <Skeleton className="h-6 w-6 shrink-0 rounded-full" />
-        <Skeleton className="h-3 w-20" />
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
 }

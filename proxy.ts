@@ -1,24 +1,21 @@
-import { getSessionCookie } from "better-auth/cookies";
 import { type NextRequest, NextResponse } from "next/server";
+import { ADMIN_COOKIE, verifySessionToken } from "./lib/admin-auth";
 import { config as appConfig } from "./lib/config";
+import { getEnv } from "./lib/env";
 
-export function proxy(request: NextRequest) {
+/**
+ * The first gate for dashboard pages. API routes authenticate themselves (shared secrets or
+ * the admin cookie), and the workflow runtime's own routes are authenticated by the runtime,
+ * so neither may be redirected to the login page.
+ */
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/api/auth/error") {
-    const error = request.nextUrl.searchParams.get("error") || "unknown_error";
-    return NextResponse.redirect(
-      new URL(`/sign-in?error=${encodeURIComponent(error)}`, request.url)
-    );
-  }
-
-  // The workflow runtime calls these itself to run steps; sending it to the sign-in page
-  // would stop every workflow. They are authenticated by the runtime, not by a session.
-  if (pathname.startsWith("/.well-known/workflow/")) {
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/api/") || pathname.startsWith("/sign-in")) {
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/.well-known/workflow/") ||
+    pathname.startsWith("/login")
+  ) {
     return NextResponse.next();
   }
 
@@ -26,9 +23,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = getSessionCookie(request);
-  if (!sessionCookie) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+  const token = request.cookies.get(ADMIN_COOKIE)?.value;
+  const signedIn = await verifySessionToken(
+    token,
+    getEnv().secrets.adminPassword,
+    Date.now()
+  );
+  if (!signedIn) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

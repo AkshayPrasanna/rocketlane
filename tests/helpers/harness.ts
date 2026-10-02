@@ -18,6 +18,7 @@ import type {
   PipelineRuntime,
 } from "@/lib/pipeline/types";
 import { createMemoryStore } from "@/lib/store/get-store";
+import type { Store } from "@/lib/store/types";
 import { AE, dealEmail } from "./emails";
 import { FakeParser } from "./fake-parser";
 
@@ -29,13 +30,15 @@ export interface HarnessOptions {
   directory?: ReturnType<typeof createAeDirectory>;
   env?: Record<string, string>;
   parser?: EmailParser;
+  /** Use a specific store, e.g. Upstash for a live seed. Defaults to a fresh in-memory store. */
+  store?: Store;
   voice?: CallScript[];
   /** When true, the call-result webhook never arrives and every wait times out. */
   waitTimesOut?: boolean;
 }
 
 export function createHarness(options: HarnessOptions = {}) {
-  const store = createMemoryStore(() => FIXED_NOW);
+  const store = options.store ?? createMemoryStore(() => FIXED_NOW);
   const gmail = new MockGmailClient();
   const voice = new MockVoiceProvider(options.voice ?? []);
   const rocketlane = new MockRocketlaneClient();

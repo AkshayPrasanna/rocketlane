@@ -20,6 +20,10 @@ const DEFAULT_LIST_LIMIT = 100;
 const keys = {
   auditAll: "ob:audit:all",
   auditDeal: (dealId: string) => `ob:audit:deal:${dealId}`,
+  callAttempt: (dealId: string, attempt: number) =>
+    `ob:call-attempt:${dealId}:${attempt}`,
+  callAttemptClaim: (dealId: string, attempt: number) =>
+    `ob:call-attempt-claim:${dealId}:${attempt}`,
   callEvent: (executionId: string, eventKey: string) =>
     `ob:call-event:${executionId}:${eventKey}`,
   claimMessage: (messageId: string) => `ob:claim:msg:${messageId}`,
@@ -68,6 +72,20 @@ export class RedisDealStore implements DealStore {
       return { claimed: true };
     }
     return { claimed: false, existingDealId: existing ?? "unknown" };
+  }
+
+  claimCallAttempt(dealId: string, attempt: number): Promise<boolean> {
+    return this.redis.set(keys.callAttemptClaim(dealId, attempt), "1", {
+      ex: THIRTY_DAYS_SECONDS,
+      nx: true,
+    });
+  }
+
+  getCallAttemptExecution(
+    dealId: string,
+    attempt: number
+  ): Promise<string | null> {
+    return this.redis.get(keys.callAttempt(dealId, attempt));
   }
 
   claimCallEvent(executionId: string, eventKey: string): Promise<boolean> {
@@ -173,6 +191,11 @@ export class RedisDealStore implements DealStore {
     await this.redis.set(
       keys.execution(parsed.executionId),
       JSON.stringify(parsed),
+      { ex: THIRTY_DAYS_SECONDS }
+    );
+    await this.redis.set(
+      keys.callAttempt(parsed.dealId, parsed.attempt),
+      parsed.executionId,
       { ex: THIRTY_DAYS_SECONDS }
     );
   }

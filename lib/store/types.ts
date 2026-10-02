@@ -12,6 +12,8 @@ export type OpportunityClaim =
   | { claimed: false; existingDealId: string };
 
 export interface DealStore {
+  /** True the first time a dial for (deal, attempt) is attempted. Stops a retried step re-dialling. */
+  claimCallAttempt(dealId: string, attempt: number): Promise<boolean>;
   /** Webhook idempotency: true the first time an (execution, event) pair is seen. */
   claimCallEvent(executionId: string, eventKey: string): Promise<boolean>;
   /** Atomically claims a Gmail message. Resolves false if it was already claimed (redelivery). */
@@ -23,6 +25,10 @@ export interface DealStore {
   ): Promise<OpportunityClaim>;
   createDeal(deal: DealRecord): Promise<void>;
   createEscalation(escalation: Escalation): Promise<void>;
+  getCallAttemptExecution(
+    dealId: string,
+    attempt: number
+  ): Promise<string | null>;
   getCallExecution(executionId: string): Promise<CallExecutionMapping | null>;
   getDeal(dealId: string): Promise<DealRecord | null>;
   getGmailHistoryId(): Promise<string | null>;

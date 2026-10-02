@@ -19,7 +19,8 @@ export interface CreateProjectInput {
 
 export interface FindProjectsQuery {
   externalReferenceId?: string;
-  projectName?: string;
+  /** Case-insensitive substring match on the project name. */
+  nameContains?: string;
 }
 
 export interface RocketlaneClient {

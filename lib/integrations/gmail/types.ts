@@ -7,6 +7,8 @@ export interface GmailMessage {
   bodyText: string;
   /** Sender from the From header. This is the only trusted identity of the AE. */
   from: GmailAddress;
+  /** True when this mailbox's own agent sent the message (marked by a header on every send). */
+  generatedByAgent: boolean;
   id: string;
   labelIds: string[];
   receivedAt: string;

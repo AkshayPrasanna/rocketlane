@@ -43,7 +43,10 @@ describe("deal state machine", () => {
   });
 
   it("stops after a clarification request until the AE replies", () => {
-    expect(nextStates("NEEDS_CLARIFICATION")).toEqual(["PARSED"]);
+    expect(nextStates("NEEDS_CLARIFICATION")).toEqual([
+      "PARSED",
+      "ESCALATED_TO_HUMAN",
+    ]);
     expect(canTransition("NEEDS_CLARIFICATION", "CALLING_AE")).toBe(false);
   });
 
@@ -65,6 +68,25 @@ describe("deal state machine", () => {
     expect(() => assertTransition("VALIDATED", "PROJECT_CREATED")).toThrow(
       "VALIDATED -> PROJECT_CREATED"
     );
+  });
+
+  it("lets any in-flight deal be escalated, but not one that has already stopped", () => {
+    const stopped = [
+      "COMPLETE",
+      "DUPLICATE_BLOCKED",
+      "ROCKETLANE_FAILED",
+      "ESCALATED_TO_HUMAN",
+    ];
+    for (const state of DEAL_STATES) {
+      expect(canTransition(state, "ESCALATED_TO_HUMAN")).toBe(
+        !stopped.includes(state)
+      );
+    }
+  });
+
+  it("blocks a duplicate opportunity before anyone is called", () => {
+    expect(canTransition("PARSED", "DUPLICATE_BLOCKED")).toBe(true);
+    expect(canTransition("PARSED", "CALLING_AE")).toBe(false);
   });
 
   it("flags the states a human must act on", () => {

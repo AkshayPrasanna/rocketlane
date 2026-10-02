@@ -22,6 +22,7 @@ export function newDeal(input: NewDealInput, now: Date): DealRecord {
     parsed: null,
     planTier: null,
     project: null,
+    projectRequestedAt: null,
     runId: null,
     state: "RECEIVED",
     stateReason: "Email received",

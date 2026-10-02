@@ -26,13 +26,24 @@ export type DealState = z.infer<typeof dealStateSchema>;
  */
 const TRANSITIONS: Record<DealState, readonly DealState[]> = {
   RECEIVED: ["PARSED", "ESCALATED_TO_HUMAN"],
-  PARSED: ["VALIDATED", "NEEDS_CLARIFICATION"],
+  // A second email for an already-claimed opportunity is blocked before anyone is called.
+  PARSED: [
+    "VALIDATED",
+    "NEEDS_CLARIFICATION",
+    "DUPLICATE_BLOCKED",
+    "ESCALATED_TO_HUMAN",
+  ],
   // Re-entry happens only when the AE replies in-thread with the missing fields.
-  NEEDS_CLARIFICATION: ["PARSED"],
+  NEEDS_CLARIFICATION: ["PARSED", "ESCALATED_TO_HUMAN"],
   VALIDATED: ["CALLING_AE", "ESCALATED_TO_HUMAN"],
   CALLING_AE: ["TIER_CONFIRMED", "CALL_RETRY", "ESCALATED_TO_HUMAN"],
   CALL_RETRY: ["CALLING_AE", "ESCALATED_TO_HUMAN"],
-  TIER_CONFIRMED: ["PROJECT_CREATED", "DUPLICATE_BLOCKED", "ROCKETLANE_FAILED"],
+  TIER_CONFIRMED: [
+    "PROJECT_CREATED",
+    "DUPLICATE_BLOCKED",
+    "ROCKETLANE_FAILED",
+    "ESCALATED_TO_HUMAN",
+  ],
   PROJECT_CREATED: ["CHANNEL_CREATED", "ESCALATED_TO_HUMAN"],
   CHANNEL_CREATED: ["COMPLETE", "ESCALATED_TO_HUMAN"],
   DUPLICATE_BLOCKED: [],

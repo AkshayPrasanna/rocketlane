@@ -45,6 +45,8 @@ export const channelRefSchema = z.object({
   channelId: z.string(),
   channelName: z.string(),
   channelUrl: z.string().nullable(),
+  /** Set once the welcome message is posted, so a retried step never posts it twice. */
+  welcomePostedAt: isoTimestamp.nullable(),
 });
 export type ChannelRef = z.infer<typeof channelRefSchema>;
 
@@ -61,6 +63,8 @@ export const dealRecordSchema = z.object({
   parsed: parsedDealSchema.nullable(),
   planTier: planTierSchema.nullable(),
   project: projectRefSchema.nullable(),
+  /** Set just before the Rocketlane create call; lets a retry recognise its own project. */
+  projectRequestedAt: isoTimestamp.nullable(),
   runId: z.string().nullable(),
   state: dealStateSchema,
   /** Human-readable reason for the most recent state change. */

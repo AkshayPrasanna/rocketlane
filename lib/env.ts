@@ -8,6 +8,21 @@ const e164Schema = z
   .string()
   .regex(E164_RE, "must be E.164, e.g. +919876543210");
 
+const timeZoneSchema = z
+  .string()
+  .default("UTC")
+  .refine(
+    (zone) => {
+      try {
+        new Intl.DateTimeFormat("en-CA", { timeZone: zone });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "must be an IANA time zone, e.g. Asia/Kolkata" }
+  );
+
 const positiveInt = (fallback: number, max: number) =>
   z.coerce.number().int().min(1).max(max).default(fallback);
 
@@ -19,12 +34,29 @@ const envSchema = z.object({
 
   AI_MODEL: z.string().min(1).default("anthropic/claude-sonnet-4-20250514"),
 
+  AE_DEMO_EMAIL: z.email().optional(),
+  AE_DEMO_NAME: z.string().min(1).optional(),
   AE_DEMO_PHONE: e164Schema.optional(),
   MAX_CALL_ATTEMPTS: positiveInt(3, 10),
   CALL_RETRY_DELAY_SECONDS: positiveInt(900, 86_400),
   CALL_RESULT_TIMEOUT_SECONDS: positiveInt(600, 3600),
 
   OPS_SLACK_CHANNEL_ID: z.string().min(1).optional(),
+
+  ROCKETLANE_OWNER_EMAIL: z.email().optional(),
+  ROCKETLANE_TEMPLATE_ID_ENTERPRISE: z.string().min(1).optional(),
+  ROCKETLANE_TEMPLATE_ID_GROWTH: z.string().min(1).optional(),
+  ENTERPRISE_CSM_NAME: z.string().min(1).optional(),
+  GROWTH_CSM_POOL_NAME: z.string().min(1).optional(),
+
+  ONBOARDING_TIMEZONE: timeZoneSchema,
+  APP_URL: z.url().optional(),
+  GMAIL_PROCESSED_LABEL: z
+    .string()
+    .min(1)
+    .default("novacrm-onboarding/processed"),
+  RETRY_MAX_ATTEMPTS: positiveInt(4, 10),
+  RETRY_BASE_DELAY_SECONDS: positiveInt(5, 3600),
 
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
@@ -35,22 +67,35 @@ const envSchema = z.object({
 export type IntegrationMode = z.infer<typeof modeSchema>;
 
 export interface Env {
-  ae: { demoPhone: string | undefined };
+  ae: {
+    demoEmail: string | undefined;
+    demoName: string | undefined;
+    demoPhone: string | undefined;
+  };
   aiModel: string;
+  appUrl: string | undefined;
   call: {
     maxAttempts: number;
     resultTimeoutSeconds: number;
     retryDelaySeconds: number;
   };
+  csmNames: { enterprise: string | undefined; growth: string | undefined };
+  gmailProcessedLabel: string;
   modes: {
     gmail: IntegrationMode;
     rocketlane: IntegrationMode;
     slack: IntegrationMode;
     voice: IntegrationMode;
   };
+  onboardingTimeZone: string;
   opsSlackChannelId: string | undefined;
   /** Upstash REST credentials (either `UPSTASH_*` or Vercel Marketplace `KV_*`), or null. */
   redis: { token: string; url: string } | null;
+  retry: { baseDelaySeconds: number; maxAttempts: number };
+  rocketlane: {
+    ownerEmail: string | undefined;
+    templateIds: { enterprise: string | undefined; growth: string | undefined };
+  };
 }
 
 type EnvSource = Record<string, string | undefined>;
@@ -74,8 +119,18 @@ export function parseEnv(source: EnvSource): Env {
   const redisToken = raw.UPSTASH_REDIS_REST_TOKEN ?? raw.KV_REST_API_TOKEN;
 
   return {
-    ae: { demoPhone: raw.AE_DEMO_PHONE },
+    ae: {
+      demoEmail: raw.AE_DEMO_EMAIL,
+      demoName: raw.AE_DEMO_NAME,
+      demoPhone: raw.AE_DEMO_PHONE,
+    },
     aiModel: raw.AI_MODEL,
+    appUrl: raw.APP_URL,
+    csmNames: {
+      enterprise: raw.ENTERPRISE_CSM_NAME,
+      growth: raw.GROWTH_CSM_POOL_NAME,
+    },
+    gmailProcessedLabel: raw.GMAIL_PROCESSED_LABEL,
     call: {
       maxAttempts: raw.MAX_CALL_ATTEMPTS,
       resultTimeoutSeconds: raw.CALL_RESULT_TIMEOUT_SECONDS,
@@ -87,7 +142,19 @@ export function parseEnv(source: EnvSource): Env {
       slack: raw.SLACK_MODE,
       voice: raw.VOICE_MODE,
     },
+    onboardingTimeZone: raw.ONBOARDING_TIMEZONE,
     opsSlackChannelId: raw.OPS_SLACK_CHANNEL_ID,
+    retry: {
+      baseDelaySeconds: raw.RETRY_BASE_DELAY_SECONDS,
+      maxAttempts: raw.RETRY_MAX_ATTEMPTS,
+    },
+    rocketlane: {
+      ownerEmail: raw.ROCKETLANE_OWNER_EMAIL,
+      templateIds: {
+        enterprise: raw.ROCKETLANE_TEMPLATE_ID_ENTERPRISE,
+        growth: raw.ROCKETLANE_TEMPLATE_ID_GROWTH,
+      },
+    },
     redis: redisUrl && redisToken ? { token: redisToken, url: redisUrl } : null,
   };
 }

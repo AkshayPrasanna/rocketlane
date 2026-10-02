@@ -8,6 +8,12 @@ export const PHASE_NAMES = [
 ] as const;
 export type PhaseName = (typeof PHASE_NAMES)[number];
 
+/**
+ * The Rocketlane role (placeholder) the overdue-task automation notifies. Both templates
+ * have it, and the app fills it with a real person after creating each project.
+ */
+export const PROJECT_MANAGER_ROLE = "Project Manager";
+
 /** Target window for a phase, as day offsets from the project start date (inclusive). */
 export interface PhaseWindow {
   endDay: number;

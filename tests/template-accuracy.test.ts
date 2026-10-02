@@ -140,16 +140,19 @@ describe("template accuracy", () => {
     expect(() => buildSettings(parseEnv({ ROCKETLANE_MODE: "live" }))).toThrow(
       "ROCKETLANE_MODE=live requires"
     );
-    expect(() =>
-      buildSettings(
-        parseEnv({
-          ROCKETLANE_MODE: "live",
-          ROCKETLANE_OWNER_EMAIL: "cs@novacrm.io",
-          ROCKETLANE_TEMPLATE_ID_ENTERPRISE: "101",
-          ROCKETLANE_TEMPLATE_ID_GROWTH: "102",
-        })
-      )
-    ).not.toThrow();
+    const complete = {
+      ROCKETLANE_MODE: "live",
+      ROCKETLANE_OWNER_EMAIL: "cs@novacrm.io",
+      ROCKETLANE_PM_EMAIL: "pm@novacrm.io",
+      ROCKETLANE_TEMPLATE_ID_ENTERPRISE: "101",
+      ROCKETLANE_TEMPLATE_ID_GROWTH: "102",
+    };
+    expect(() => buildSettings(parseEnv(complete))).not.toThrow();
+    // Without a Project Manager the overdue alert would have no recipient.
+    const { ROCKETLANE_PM_EMAIL: _pm, ...withoutPm } = complete;
+    expect(() => buildSettings(parseEnv(withoutPm))).toThrow(
+      "ROCKETLANE_PM_EMAIL"
+    );
   });
 
   it("lets a deployment rename the CSMs without touching the plan definitions", () => {

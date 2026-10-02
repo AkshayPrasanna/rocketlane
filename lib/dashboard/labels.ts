@@ -9,6 +9,7 @@ export const STEP_LABELS: Record<string, string> = {
   claim_opportunity: "Check for a duplicate opportunity",
   complete: "Finish onboarding",
   create_channel: "Create Slack channel",
+  assign_project_manager: "Assign Project Manager",
   create_project: "Create Rocketlane project",
   escalate_call: "Escalate the call",
   evaluate_call: "Read the call result",
@@ -39,6 +40,7 @@ export const REASON_LABELS: Record<EscalationReason, string> = {
   ROCKETLANE_FAILURE: "Rocketlane failed",
   SENDER_NOT_AUTHENTICATED: "Sender failed email authentication",
   SLACK_FAILURE: "Slack setup failed",
+  TEMPLATE_MISMATCH: "Wrong or unconfirmed template",
   UNKNOWN_AE: "Unknown sender",
   VOICE_SYSTEM_ERROR: "Voice provider problem",
 };

@@ -13,6 +13,8 @@ export interface PipelineSettings {
   /** Bounded retry for Rocketlane and Slack calls that fail with a retryable error. */
   retry: { baseDelaySeconds: number; maxAttempts: number };
   rocketlaneOwnerEmail: string;
+  /** Fills the template's Project Manager role, the first recipient of overdue alerts. */
+  rocketlanePmEmail: string;
   timeZone: string;
 }
 
@@ -21,6 +23,7 @@ const MOCK_TEMPLATE_IDS: Record<PlanTier, string> = {
   growth: "mock-template-growth",
 };
 const MOCK_OWNER_EMAIL = "owner@mock.test";
+const MOCK_PM_EMAIL = "pm@mock.test";
 export const SIMULATED_OPS_CHANNEL = "ops-escalations";
 
 /**
@@ -42,9 +45,11 @@ export function buildSettings(env: Env): PipelineSettings {
   const live = env.modes.rocketlane === "live";
   const { enterprise, growth } = env.rocketlane.templateIds;
 
-  if (live && !(enterprise && growth && env.rocketlane.ownerEmail)) {
+  const { ownerEmail, pmEmail } = env.rocketlane;
+
+  if (live && !(enterprise && growth && ownerEmail && pmEmail)) {
     throw new Error(
-      "ROCKETLANE_MODE=live requires ROCKETLANE_TEMPLATE_ID_ENTERPRISE, ROCKETLANE_TEMPLATE_ID_GROWTH and ROCKETLANE_OWNER_EMAIL"
+      "ROCKETLANE_MODE=live requires ROCKETLANE_TEMPLATE_ID_ENTERPRISE, ROCKETLANE_TEMPLATE_ID_GROWTH, ROCKETLANE_OWNER_EMAIL and ROCKETLANE_PM_EMAIL"
     );
   }
 
@@ -76,7 +81,8 @@ export function buildSettings(env: Env): PipelineSettings {
       (env.modes.slack === "mock" ? SIMULATED_OPS_CHANNEL : null),
     plans,
     retry: env.retry,
-    rocketlaneOwnerEmail: env.rocketlane.ownerEmail ?? MOCK_OWNER_EMAIL,
+    rocketlaneOwnerEmail: ownerEmail ?? MOCK_OWNER_EMAIL,
+    rocketlanePmEmail: pmEmail ?? MOCK_PM_EMAIL,
     timeZone: env.onboardingTimeZone,
   };
 }

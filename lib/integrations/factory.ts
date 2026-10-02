@@ -1,9 +1,10 @@
-import type { Env, IntegrationMode } from "@/lib/env";
+import type { Env } from "@/lib/env";
 import { createLogger } from "@/lib/logger";
 import type { Store } from "@/lib/store/types";
 import { BridgeGmailClient } from "./gmail/bridge";
 import { MockGmailClient } from "./gmail/mock";
 import type { GmailClient } from "./gmail/types";
+import { RocketlaneApiClient } from "./rocketlane/live";
 import { MockRocketlaneClient } from "./rocketlane/mock";
 import type { RocketlaneClient } from "./rocketlane/types";
 import { SimulatedSlackClient } from "./slack/simulated";
@@ -24,12 +25,6 @@ export interface Integrations {
 interface FactoryOptions {
   clock: () => Date;
   newId: () => string;
-}
-
-function unavailable(name: string, mode: IntegrationMode): Error {
-  return new Error(
-    `${name}_MODE=${mode} is not available yet: the live ${name.toLowerCase()} client has not been built.`
-  );
 }
 
 /** A mock selected outside tests only ever sees the data it was given, so say so loudly. */
@@ -73,11 +68,21 @@ export function createIntegrations(
     voice = new MockVoiceProvider([]);
   }
 
+  let rocketlane: RocketlaneClient;
   if (modes.rocketlane === "live") {
-    throw unavailable("ROCKETLANE", modes.rocketlane);
+    const { apiKey, baseUrl, projectUrlTemplate } = env.rocketlane;
+    if (!apiKey) {
+      throw new Error("ROCKETLANE_MODE=live requires ROCKETLANE_API_KEY");
+    }
+    rocketlane = new RocketlaneApiClient({
+      apiKey,
+      baseUrl,
+      projectUrlTemplate,
+    });
+  } else {
+    warnMock("ROCKETLANE");
+    rocketlane = new MockRocketlaneClient();
   }
-  warnMock("ROCKETLANE");
-  const rocketlane: RocketlaneClient = new MockRocketlaneClient();
 
   if (modes.slack === "live") {
     throw new Error(

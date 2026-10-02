@@ -69,6 +69,11 @@ export function createHarness(options: HarnessOptions = {}) {
     voice,
   };
 
+  // Rocketlane reports a template's name, so the mock knows what each plan's template is called.
+  for (const plan of Object.values(deps.settings.plans)) {
+    rocketlane.templateNames.set(plan.templateId, plan.templateName);
+  }
+
   const sleeps: number[] = [];
   const waitersOpened: Array<{ attempt: number; hookToken: string }> = [];
   const runtime: PipelineRuntime = {

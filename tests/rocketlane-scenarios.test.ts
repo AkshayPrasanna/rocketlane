@@ -257,3 +257,126 @@ describe("a Rocketlane error carries through to the audit log", () => {
     ).toBe(false);
   });
 });
+
+describe("the template Rocketlane used", () => {
+  const enterpriseId = (h: ReturnType<typeof createHarness>) =>
+    h.deps.settings.plans.enterprise.templateId;
+
+  it("accepts a project built from the confirmed tier's template", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    const deal = await h.deal(messageId);
+    expect(deal.project?.templateId).toBe(enterpriseId(h));
+  });
+
+  it("escalates a project built from a different template and does not retry it", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.reportedTemplateId = "999";
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("ROCKETLANE_FAILED");
+    expect(h.rocketlane.createRequests).toHaveLength(1);
+    expect(h.rocketlane.assignments).toHaveLength(0);
+    const deal = await h.deal(messageId);
+    expect(deal.project).toBeNull();
+    const [escalation] = await h.store.deals.listEscalations();
+    expect(escalation.reason).toBe("TEMPLATE_MISMATCH");
+    expect(escalation.detail).toContain(h.rocketlane.projects[0].projectId);
+    expect(escalation.detail).toContain("999");
+    expect(h.slack.channels.size).toBe(0);
+  });
+
+  it("escalates when the template ID is right but Rocketlane names a different template", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    // The Enterprise ID now points at the Growth template: the "mixed up templates" failure.
+    h.rocketlane.templateNames.set(
+      enterpriseId(h),
+      h.deps.settings.plans.growth.templateName
+    );
+
+    const { outcome } = await h.run();
+
+    expect(outcome).toBe("ROCKETLANE_FAILED");
+    const [escalation] = await h.store.deals.listEscalations();
+    expect(escalation.reason).toBe("TEMPLATE_MISMATCH");
+    expect(escalation.detail).toContain("NovaCRM Growth Onboarding (14d)");
+  });
+
+  it("escalates when Rocketlane does not say which template it used", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.reportedTemplateId = null;
+
+    const { outcome } = await h.run();
+
+    expect(outcome).toBe("ROCKETLANE_FAILED");
+    const [escalation] = await h.store.deals.listEscalations();
+    expect(escalation.reason).toBe("TEMPLATE_MISMATCH");
+    expect(escalation.detail).toContain("no template reported");
+  });
+
+  it("does not adopt an interrupted project that was built from another template", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.reportedTemplateId = "999";
+    h.rocketlane.loseNextCreateResponses(1);
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("DUPLICATE_BLOCKED");
+    const deal = await h.deal(messageId);
+    expect(deal.project).toBeNull();
+  });
+});
+
+describe("the Project Manager role", () => {
+  it("is filled on every project so the 1-day overdue alert has a recipient", async () => {
+    const h = createHarness({
+      env: { ROCKETLANE_PM_EMAIL: "pm@novacrm.io" },
+      voice: [...ENTERPRISE],
+    });
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    expect(h.rocketlane.assignments).toEqual([
+      {
+        assignments: [{ email: "pm@novacrm.io", roleName: "Project Manager" }],
+        projectId: h.rocketlane.projects[0].projectId,
+      },
+    ]);
+    const entries = await h.store.audit.listByDeal(messageId);
+    const entry = entries.find((e) => e.step === "assign_project_manager");
+    expect(entry?.outcome).toBe("success");
+    // The address is not copied into the audit log.
+    expect(JSON.stringify(entry)).not.toContain("pm@novacrm.io");
+  });
+
+  it("still completes onboarding when the template has no such role, and says so", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.rolesMissingFromTemplate.add("Project Manager");
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    const entries = await h.store.audit.listByDeal(messageId);
+    const entry = entries.find((e) => e.step === "assign_project_manager");
+    expect(entry?.outcome).toBe("failure");
+    expect(entry?.rationale).toContain("no recipient");
+  });
+
+  it("still completes onboarding when Rocketlane errors while assigning", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.faults.armDown("assignPlaceholders", "server_error");
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    const entries = await h.store.audit.listByDeal(messageId);
+    const entry = entries.find((e) => e.step === "assign_project_manager");
+    expect(entry?.outcome).toBe("failure");
+    expect(JSON.stringify(entry?.output)).toContain("server_error");
+  });
+});

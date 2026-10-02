@@ -43,7 +43,14 @@ const envSchema = z.object({
 
   OPS_SLACK_CHANNEL_ID: z.string().min(1).optional(),
 
+  ROCKETLANE_API_KEY: z.string().min(1).optional(),
+  ROCKETLANE_BASE_URL: z.url().optional(),
   ROCKETLANE_OWNER_EMAIL: z.email().optional(),
+  ROCKETLANE_PM_EMAIL: z.email().optional(),
+  ROCKETLANE_PROJECT_URL_TEMPLATE: z
+    .string()
+    .includes("{id}", { message: "must contain {id}" })
+    .optional(),
   ROCKETLANE_TEMPLATE_ID_ENTERPRISE: z.string().min(1).optional(),
   ROCKETLANE_TEMPLATE_ID_GROWTH: z.string().min(1).optional(),
   ENTERPRISE_CSM_NAME: z.string().min(1).optional(),
@@ -102,7 +109,11 @@ export interface Env {
   redis: { token: string; url: string } | null;
   retry: { baseDelaySeconds: number; maxAttempts: number };
   rocketlane: {
+    apiKey: string | undefined;
+    baseUrl: string | undefined;
     ownerEmail: string | undefined;
+    pmEmail: string | undefined;
+    projectUrlTemplate: string | undefined;
     templateIds: { enterprise: string | undefined; growth: string | undefined };
   };
   /** Shared secrets for inbound routes. Each route refuses requests when its secret is unset. */
@@ -172,7 +183,11 @@ export function parseEnv(source: EnvSource): Env {
       maxAttempts: raw.RETRY_MAX_ATTEMPTS,
     },
     rocketlane: {
+      apiKey: raw.ROCKETLANE_API_KEY,
+      baseUrl: raw.ROCKETLANE_BASE_URL,
       ownerEmail: raw.ROCKETLANE_OWNER_EMAIL,
+      pmEmail: raw.ROCKETLANE_PM_EMAIL,
+      projectUrlTemplate: raw.ROCKETLANE_PROJECT_URL_TEMPLATE,
       templateIds: {
         enterprise: raw.ROCKETLANE_TEMPLATE_ID_ENTERPRISE,
         growth: raw.ROCKETLANE_TEMPLATE_ID_GROWTH,

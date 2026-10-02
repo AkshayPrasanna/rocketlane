@@ -1,0 +1,26 @@
+packages:
+  - .
+
+minimumReleaseAge: 2880 # 48 hrs
+minimumReleaseAgeExclude:
+  - '@next/*'
+  - eslint-config-next
+  - next
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@prisma/engines'
+  - '@swc/core'
+  - better-sqlite3
+  - cbor-extract
+  - esbuild
+  - msw
+  - prisma
+  - sharp
+
+overrides:
+  '@prisma/client': 7.8.0
+  devalue: 5.8.1
+  file-type: 21.3.2
+  postcss: 8.5.15
+  prisma: 7.8.0
+  undici: 7.24.0

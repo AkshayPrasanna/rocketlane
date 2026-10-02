@@ -14,7 +14,7 @@
  */
 
 var PROCESSED_LABEL = "novacrm-processed";
-var DEFAULT_QUERY = 'in:inbox -from:me newer_than:2d subject:"deal closed"';
+var DEFAULT_QUERY = 'in:inbox -from:me newer_than:2d subject:"deal closed" -label:' + PROCESSED_LABEL;
 var MAX_THREADS = 10;
 var SENT_MEMORY = 200;
 

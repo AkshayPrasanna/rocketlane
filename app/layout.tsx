@@ -8,8 +8,8 @@ import "./globals.css";
 
 export function generateMetadata(): Metadata {
   return {
-    title: `${config.communityName} — Admin`,
-    description: `Admin panel for the ${config.communityName} community agent`,
+    title: `${config.appName} — Admin`,
+    description: `Deal pipeline, audit log and escalation queue for ${config.appName}`,
   };
 }
 

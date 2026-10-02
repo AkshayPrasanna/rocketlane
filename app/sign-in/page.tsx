@@ -20,17 +20,15 @@ export default function SignInPage() {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">
-              {config.communityName} Demo
-            </CardTitle>
+            <CardTitle className="text-xl">{config.appName} Demo</CardTitle>
             <CardDescription>
-              Browse the template with mock activity before connecting Slack.
+              Admin sign-in is bypassed in demo mode.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/">
-                View demo dashboard
+                Open dashboard
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -44,9 +42,7 @@ export default function SignInPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">
-            {config.communityName} Admin
-          </CardTitle>
+          <CardTitle className="text-xl">{config.appName} Admin</CardTitle>
           <CardDescription>
             Sign in with your Slack account to access the admin panel.
           </CardDescription>

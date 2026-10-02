@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Bot, LayoutDashboard, LogOut, Settings } from "lucide-react";
+import { Bot, LayoutDashboard, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
@@ -21,12 +21,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 
 const navItems = [
-  { href: "/" as const, label: "Overview", icon: LayoutDashboard },
-  { href: "/activity" as const, label: "Activity", icon: Activity },
-  { href: "/settings" as const, label: "Settings", icon: Settings },
+  { href: "/" as const, label: "Deals", icon: LayoutDashboard },
 ];
 
-export function Sidebar({ communityName }: { communityName: string }) {
+export function Sidebar({ appName }: { appName: string }) {
   const { setOpenMobile } = useSidebar();
 
   return (
@@ -36,7 +34,7 @@ export function Sidebar({ communityName }: { communityName: string }) {
           <Bot className="h-5 w-5" />
           <div className="min-w-0">
             <span className="block truncate font-semibold text-sm">
-              {communityName}
+              {appName}
             </span>
             <span className="block text-[11px] text-muted-foreground">
               Admin panel

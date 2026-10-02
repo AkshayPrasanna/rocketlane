@@ -4,17 +4,15 @@ function isEnabled(value: string | undefined): boolean {
     : false;
 }
 
+/**
+ * UI-level settings read by the admin panel and proxy. Pipeline settings
+ * (integration modes, call retries, secrets) live in `lib/env.ts`.
+ */
 export const config = {
+  /** Bypasses admin sign-in only; deal data is always read from the real store. */
   adminDemoMode:
     isEnabled(process.env.ADMIN_DEMO_MODE) &&
     isEnabled(process.env.ALLOW_ADMIN_DEMO_MODE),
-  communityName: process.env.COMMUNITY_NAME || "Your Community",
-  model: process.env.AI_MODEL || "anthropic/claude-sonnet-4-20250514",
+  appName: process.env.APP_NAME || "NovaCRM Onboarding",
   slackWorkspaceUrl: process.env.SLACK_WORKSPACE_URL || "",
-  savoirApiUrl: process.env.SAVOIR_API_URL || "",
-  savoirApiKey: process.env.SAVOIR_API_KEY || "",
-  searchDomains: process.env.SEARCH_DOMAINS
-    ? process.env.SEARCH_DOMAINS.split(",").map((d) => d.trim())
-    : [],
-  communityLeadSlackId: process.env.COMMUNITY_LEAD_SLACK_ID || "",
 };

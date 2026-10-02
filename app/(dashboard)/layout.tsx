@@ -9,7 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <SidebarProvider>
-      <Sidebar communityName={config.communityName} />
+      <Sidebar appName={config.appName} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );

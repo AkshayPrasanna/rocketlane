@@ -35,6 +35,22 @@ function install() {
   Logger.log("Installed: run() will execute every minute.");
 }
 
+/**
+ * Run this if check() fails with HTTP 401. It prints a short fingerprint of BRIDGE_SECRET, never
+ * the secret itself. On your computer, run:
+ *   set -a; source .env.local; set +a; printf %s "$GMAIL_BRIDGE_SECRET" | shasum -a 256 | cut -c1-8
+ * If the two fingerprints differ, this script's secret is wrong. If they match, the value on
+ * Vercel is wrong or Vercel has not been redeployed since you set it.
+ */
+function debug() {
+  var cfg = config_();
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, cfg.secret);
+  var hex = digest.map(function (b) { return ("0" + (b & 255).toString(16)).slice(-2); }).join("");
+  Logger.log("APP_URL: " + cfg.appUrl);
+  Logger.log("BRIDGE_SECRET length: " + cfg.secret.length + " (the generated secret is 48 characters)");
+  Logger.log("BRIDGE_SECRET fingerprint: " + hex.slice(0, 8));
+}
+
 /** Run this to confirm the app is reachable and the secret is right. Expect "OK". */
 function check() {
   var cfg = config_();
@@ -143,16 +159,21 @@ function sendQueuedReplies_(cfg) {
 function config_() {
   var p = PropertiesService.getScriptProperties();
   var cfg = {
-    appUrl: p.getProperty("APP_URL"),
-    secret: p.getProperty("BRIDGE_SECRET"),
-    bypass: p.getProperty("VERCEL_BYPASS"),
-    query: p.getProperty("QUERY") || DEFAULT_QUERY,
+    appUrl: clean_(p.getProperty("APP_URL")),
+    secret: clean_(p.getProperty("BRIDGE_SECRET")),
+    bypass: clean_(p.getProperty("VERCEL_BYPASS")),
+    query: clean_(p.getProperty("QUERY")) || DEFAULT_QUERY,
   };
   if (!cfg.appUrl || !cfg.secret) {
     throw new Error("Set APP_URL and BRIDGE_SECRET under Project Settings -> Script properties.");
   }
   cfg.appUrl = cfg.appUrl.replace(/\/+$/, "");
   return cfg;
+}
+
+/** Pasted values often carry an invisible trailing space or newline. */
+function clean_(value) {
+  return value ? String(value).trim() : value;
 }
 
 function call_(cfg, method, path, body) {

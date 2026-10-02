@@ -79,7 +79,7 @@ The exact test emails for the demo videos will be in `docs/demo-script.md`.
 
 | Symptom | Likely cause and fix |
 | --- | --- |
-| `check` fails with HTTP 401 | `BRIDGE_SECRET` in the script differs from `GMAIL_BRIDGE_SECRET` in the app, or the app was not redeployed after you set it. |
+| `check` or `run` fails with HTTP 401 | The script's `BRIDGE_SECRET` differs from the app's `GMAIL_BRIDGE_SECRET`. Vercel only applies a changed variable to a **new deployment**, so redeploy after editing it. Run `debug` in the script and compare its fingerprint with the one printed by the command in its comment: different means the script's value is wrong, the same means Vercel's value is wrong or stale. |
 | HTTP 503 | The app has no `GMAIL_BRIDGE_SECRET` set. Endpoints refuse every request until it is. |
 | HTTP 401 with a Vercel login page in the message | Deployment Protection is blocking the script. Add `VERCEL_BYPASS`, or use a custom domain. |
 | `Set APP_URL and BRIDGE_SECRET…` | A script property is missing or misspelt (names are case sensitive). |

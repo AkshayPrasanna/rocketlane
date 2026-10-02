@@ -112,10 +112,16 @@ export interface Env {
 
 type EnvSource = Record<string, string | undefined>;
 
-/** Empty strings (`FOO=` in a .env file) count as unset. */
+/**
+ * Empty strings (`FOO=` in a .env file) count as unset, and surrounding whitespace is dropped.
+ * A trailing space or newline pasted into a dashboard field is invisible, so without this a
+ * shared secret would silently never match.
+ */
 function dropEmpty(source: EnvSource): EnvSource {
   return Object.fromEntries(
-    Object.entries(source).filter(([, value]) => value?.trim())
+    Object.entries(source)
+      .map(([key, value]) => [key, value?.trim()] as const)
+      .filter(([, value]) => value)
   );
 }
 

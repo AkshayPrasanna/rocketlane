@@ -19,6 +19,12 @@ describe("parseEnv", () => {
     expect(env.redis).toBeNull();
   });
 
+  it("ignores whitespace pasted around a value, such as a shared secret", () => {
+    const env = parseEnv({ GMAIL_BRIDGE_SECRET: "  0123456789abcdef0123\n" });
+
+    expect(env.secrets.gmailBridge).toBe("0123456789abcdef0123");
+  });
+
   it("switches a single integration to live without touching the others", () => {
     const env = parseEnv({ ROCKETLANE_MODE: "live" });
 

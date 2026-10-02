@@ -1,0 +1,31 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "status": "completed",
+  "smart_status": "completed",
+  "conversation_duration": 31.0,
+  "answered_by_voice_mail": null,
+  "error_message": null,
+  "transcript": "assistant: Hello, this is NovaCRM's onboarding assistant. Am I speaking with Ravi?\nuser:  yes\nassistant:  I'm calling to confirm one detail about the Acme Corp deal. Is this customer on the Enterprise plan or the Growth plan?\nuser:  enterprise plan\nassistant:  I heard Enterprise. Is that correct?\nuser:  yeah\nassistant: Thank you, that's confirmed. Goodbye.\n",
+  "extracted_data": {
+    "Plan confirmation": {
+      "confirmed": {
+        "objective": "yes",
+        "confidence": 1.0,
+        "subjective": null,
+        "validation": null,
+        "confidence_label": "High",
+        "reasoning_objective": "The AE clearly said 'yeah' confirming the assistant's read-back.",
+        "reasoning_subjective": null
+      },
+      "plan_tier": {
+        "objective": "enterprise",
+        "confidence": 1.0,
+        "subjective": null,
+        "validation": null,
+        "confidence_label": "High",
+        "reasoning_objective": "The AE explicitly said 'enterprise plan' without any hesitation or contradiction.",
+        "reasoning_subjective": null
+      }
+    }
+  }
+}

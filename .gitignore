@@ -51,3 +51,6 @@ next-env.d.ts
 # Workflow DevKit local data and test build output
 .workflow-data/
 .workflow-vitest/
+
+# Local backups of the Bolna agent made by scripts/bolna/setup.mjs
+.bolna-backups/

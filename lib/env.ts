@@ -60,6 +60,8 @@ const envSchema = z.object({
 
   GMAIL_BRIDGE_SECRET: z.string().min(16).optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
+  BOLNA_API_KEY: z.string().min(10).optional(),
+  BOLNA_AGENT_ID: z.uuid().optional(),
   BOLNA_WEBHOOK_SECRET: z.string().min(16).optional(),
   BOLNA_WEBHOOK_IP_CHECK: z.enum(["enforce", "off"]).default("enforce"),
 
@@ -79,6 +81,7 @@ export interface Env {
   };
   aiModel: string;
   appUrl: string | undefined;
+  bolna: { agentId: string | undefined; apiKey: string | undefined };
   bolnaWebhookIpCheck: "enforce" | "off";
   call: {
     maxAttempts: number;
@@ -144,6 +147,7 @@ export function parseEnv(source: EnvSource): Env {
     },
     aiModel: raw.AI_MODEL,
     appUrl: raw.APP_URL,
+    bolna: { agentId: raw.BOLNA_AGENT_ID, apiKey: raw.BOLNA_API_KEY },
     bolnaWebhookIpCheck: raw.BOLNA_WEBHOOK_IP_CHECK,
     csmNames: {
       enterprise: raw.ENTERPRISE_CSM_NAME,

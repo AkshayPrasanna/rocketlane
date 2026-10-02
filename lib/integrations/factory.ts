@@ -8,6 +8,7 @@ import { MockRocketlaneClient } from "./rocketlane/mock";
 import type { RocketlaneClient } from "./rocketlane/types";
 import { SimulatedSlackClient } from "./slack/simulated";
 import type { SlackClient } from "./slack/types";
+import { BolnaVoiceProvider } from "./voice/bolna";
 import { MockVoiceProvider } from "./voice/mock";
 import type { VoiceProvider } from "./voice/types";
 
@@ -58,11 +59,19 @@ export function createIntegrations(
     gmail = new MockGmailClient();
   }
 
+  let voice: VoiceProvider;
   if (modes.voice === "live") {
-    throw unavailable("VOICE", modes.voice);
+    const { agentId, apiKey } = env.bolna;
+    if (!(agentId && apiKey)) {
+      throw new Error(
+        "VOICE_MODE=live requires BOLNA_API_KEY and BOLNA_AGENT_ID"
+      );
+    }
+    voice = new BolnaVoiceProvider({ agentId, apiKey });
+  } else {
+    warnMock("VOICE");
+    voice = new MockVoiceProvider([]);
   }
-  warnMock("VOICE");
-  const voice: VoiceProvider = new MockVoiceProvider([]);
 
   if (modes.rocketlane === "live") {
     throw unavailable("ROCKETLANE", modes.rocketlane);

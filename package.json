@@ -25,7 +25,8 @@
     "fix": "ultracite fix",
     "test:unit": "vitest run",
     "test:workflow": "vitest run --config vitest.workflow.config.mts",
-    "test:live": "vitest run --config vitest.live.config.mts"
+    "test:live": "vitest run --config vitest.live.config.mts",
+    "bolna:setup": "node --env-file=.env.local scripts/bolna/setup.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",

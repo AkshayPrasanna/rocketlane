@@ -2,8 +2,8 @@
 
 One recording, about fifteen minutes, two parts: everything works, then things go wrong on purpose. If it runs long, the Growth run (section 3) and the escalation queue (section 11) can be trimmed. The accounts:
 
-- **CS inbox:** akshayprasanna11@gmail.com (the app watches this)
-- **AE:** akshayprasannav@gmail.com (sends the deal emails, gets the phone call)
+- **CS inbox:** the Gmail account the inbox script runs in (the app watches this)
+- **AE:** the address in `AE_DEMO_EMAIL`, which sends the deal emails and gets the phone call
 
 Every email has to be sent from the AE address, and the subject has to contain "deal closed", or the inbox script ignores it.
 

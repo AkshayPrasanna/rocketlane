@@ -131,6 +131,7 @@ describe("happy path: Enterprise deal", () => {
       "place_call",
       "evaluate_call",
       "assign_project_manager",
+      "read_schedule",
       "create_project",
       "create_channel",
       "post_welcome",

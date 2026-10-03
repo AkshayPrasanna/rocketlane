@@ -7,6 +7,7 @@ import type {
   PlaceholderOutcome,
   RocketlaneClient,
   RocketlaneProject,
+  RocketlaneSchedule,
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://api.rocketlane.com/api/1.0";
@@ -80,6 +81,23 @@ const assignedSchema = z.looseObject({
       })
     )
     .nullish(),
+});
+
+const scheduleProjectSchema = z.looseObject({
+  dueDate: z.string(),
+  startDate: z.string(),
+});
+
+const phaseListSchema = z.looseObject({
+  data: z
+    .array(
+      z.looseObject({
+        dueDate: z.string(),
+        phaseName: z.string(),
+        startDate: z.string(),
+      })
+    )
+    .default([]),
 });
 
 const errorBodySchema = z.looseObject({
@@ -251,6 +269,31 @@ export class RocketlaneApiClient implements RocketlaneClient {
       (confirmed ? outcome.assigned : outcome.missing).push(sent.roleName);
     }
     return outcome;
+  }
+
+  async getSchedule(projectId: string): Promise<RocketlaneSchedule> {
+    const [project, phases] = await Promise.all([
+      this.request(
+        "GET",
+        `/projects/${encodeURIComponent(projectId)}`,
+        scheduleProjectSchema
+      ),
+      // The phases endpoint takes the project as a plain `projectId` parameter.
+      this.request("GET", "/phases", phaseListSchema, {
+        query: { projectId },
+      }),
+    ]);
+    return {
+      dueDate: project.dueDate,
+      phases: phases.data
+        .map((phase) => ({
+          endDate: phase.dueDate,
+          name: phase.phaseName,
+          startDate: phase.startDate,
+        }))
+        .sort((a, b) => a.startDate.localeCompare(b.startDate)),
+      startDate: project.startDate,
+    };
   }
 
   private async listAll(

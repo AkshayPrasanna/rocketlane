@@ -380,3 +380,61 @@ describe("the Project Manager role", () => {
     expect(JSON.stringify(entry?.output)).toContain("server_error");
   });
 });
+
+describe("the schedule Rocketlane reports", () => {
+  const welcomeOf = (h: ReturnType<typeof createHarness>) =>
+    h.slack.posts.find((post) => post.text.includes("Welcome"))?.text ?? "";
+
+  it("is what the deal record and the Slack welcome show, not our calendar plan", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    // Rocketlane schedules template durations in working days, so it lands later than +30.
+    h.rocketlane.schedules.set("rl-1", {
+      dueDate: "2026-11-12",
+      phases: [
+        { endDate: "2026-10-06", name: "Kickoff", startDate: "2026-10-02" },
+        {
+          endDate: "2026-10-22",
+          name: "Data Migration",
+          startDate: "2026-10-07",
+        },
+        {
+          endDate: "2026-11-05",
+          name: "Configuration",
+          startDate: "2026-10-23",
+        },
+        { endDate: "2026-11-12", name: "Go-Live", startDate: "2026-11-06" },
+      ],
+      startDate: "2026-10-02",
+    });
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    const deal = await h.deal(messageId);
+    expect(deal.project?.dueDate).toBe("2026-11-12");
+    expect(deal.project?.phases).toHaveLength(4);
+    const channelId = deal.channel?.channelId ?? "";
+    expect(h.slack.topics.get(channelId)).toContain("Go-live target 12 Nov");
+    const welcome = welcomeOf(h);
+    expect(welcome).toContain("*Go-Live*: 6 Nov to 12 Nov");
+    expect(welcome).not.toContain("1 Nov");
+  });
+
+  it("falls back to the plan, and says so, when it cannot be read", async () => {
+    const h = createHarness({ voice: [...ENTERPRISE] });
+    h.rocketlane.faults.armDown("getSchedule", "server_error");
+
+    const { messageId, outcome } = await h.run();
+
+    expect(outcome).toBe("COMPLETE");
+    const deal = await h.deal(messageId);
+    // The test clock is 2 Oct, so the 30-day plan ends 1 Nov.
+    expect(deal.project?.dueDate).toBe("2026-11-01");
+    const entries = await h.store.audit.listByDeal(messageId);
+    const entry = entries.find((e) => e.step === "read_schedule");
+    expect(entry?.outcome).toBe("failure");
+    expect(entry?.rationale).toContain("planned dates");
+    const channelId = deal.channel?.channelId ?? "";
+    expect(h.slack.topics.get(channelId)).toContain("Go-live target 1 Nov");
+  });
+});

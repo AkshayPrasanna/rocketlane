@@ -15,6 +15,8 @@ const {
   ROCKETLANE_TEMPLATE_ID_GROWTH,
 } = process.env;
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 function liveClient(): RocketlaneApiClient {
   if (!ROCKETLANE_API_KEY) {
     throw new Error("Set ROCKETLANE_API_KEY in .env.local");
@@ -36,6 +38,22 @@ describe("the real Rocketlane sandbox (read-only)", () => {
       expect(found.length).toBeGreaterThan(0);
       for (const project of found) {
         expect(project.projectName.toLowerCase()).toContain("acme");
+      }
+    }
+  );
+
+  it.skipIf(!ROCKETLANE_API_KEY)(
+    "reads a project's real schedule and phase windows",
+    async () => {
+      const client = liveClient();
+      const [sample] = await client.findProjects({ nameContains: "acme" });
+
+      const schedule = await client.getSchedule(sample.projectId);
+
+      expect(schedule.dueDate).toMatch(ISO_DATE);
+      expect(schedule.phases.length).toBeGreaterThan(0);
+      for (const phase of schedule.phases) {
+        expect(phase.startDate <= phase.endDate).toBe(true);
       }
     }
   );

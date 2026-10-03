@@ -3,7 +3,7 @@ import {
   type ResolvedPlan,
 } from "@/config/onboarding-plans";
 import type { Auditor } from "@/lib/audit";
-import { computeSchedule, todayIn } from "@/lib/domain/schedule";
+import { computeSchedule, type Schedule, todayIn } from "@/lib/domain/schedule";
 import type { DealRecord, ProjectRef } from "@/lib/domain/schemas";
 import { IntegrationError } from "@/lib/integrations/errors";
 import type { RocketlaneProject } from "@/lib/integrations/rocketlane/types";
@@ -61,6 +61,48 @@ function describeTemplate(project: RocketlaneProject): string {
     return "no template reported";
   }
   return `template "${project.templateName ?? "unnamed"}" (${project.templateId})`;
+}
+
+/**
+ * The dates Rocketlane actually scheduled. A template's durations are in working days, so they
+ * differ from the calendar plan; the Slack message and dashboard must show what the project
+ * really says. If they cannot be read, the plan is used and the audit log says so.
+ */
+async function readSchedule(
+  deps: PipelineDeps,
+  auditor: Auditor,
+  projectId: string,
+  planned: Schedule
+): Promise<Schedule> {
+  try {
+    const actual = await deps.rocketlane.getSchedule(projectId);
+    await auditor.record({
+      input: { projectId },
+      outcome: "success",
+      output: {
+        dueDate: actual.dueDate,
+        phases: actual.phases.length,
+        plannedDueDate: planned.dueDate,
+      },
+      rationale:
+        "Read back the dates Rocketlane scheduled (template durations are in working days) so the Slack message and dashboard match the project.",
+      step: "read_schedule",
+    });
+    return actual;
+  } catch (error) {
+    if (!(error instanceof IntegrationError)) {
+      throw error;
+    }
+    await auditor.record({
+      input: { projectId },
+      outcome: "failure",
+      output: { error: describeError(error) },
+      rationale:
+        "Could not read the schedule back from Rocketlane, so the planned dates are used and may differ from the project.",
+      step: "read_schedule",
+    });
+    return planned;
+  }
 }
 
 /**
@@ -136,11 +178,12 @@ export async function createProject(
     todayIn(deps.clock(), deps.settings.timeZone)
   );
   const projectName = `${parsed.customerName} - ${plan.label} Onboarding`;
-  const toRef = (project: RocketlaneProject): ProjectRef => ({
-    dueDate: schedule.dueDate,
+  const toRef = (project: RocketlaneProject, actual: Schedule): ProjectRef => ({
+    dueDate: actual.dueDate,
+    phases: actual.phases,
     projectId: project.projectId,
     projectUrl: project.url,
-    startDate: schedule.startDate,
+    startDate: actual.startDate,
     templateId: plan.templateId,
     templateName: plan.templateName,
   });
@@ -165,8 +208,14 @@ export async function createProject(
 
       if (isOurs) {
         await assignProjectManager(deps, auditor, only.projectId);
+        const adoptedSchedule = await readSchedule(
+          deps,
+          auditor,
+          only.projectId,
+          schedule
+        );
         await deps.store.deals.transitionDeal(dealId, "PROJECT_CREATED", {
-          project: toRef(only),
+          project: toRef(only, adoptedSchedule),
           stateReason: "Adopted the project created by an interrupted attempt",
         });
         await auditor.record({
@@ -242,15 +291,21 @@ export async function createProject(
     }
 
     await assignProjectManager(deps, auditor, project.projectId);
+    const actualSchedule = await readSchedule(
+      deps,
+      auditor,
+      project.projectId,
+      schedule
+    );
     await deps.store.deals.transitionDeal(dealId, "PROJECT_CREATED", {
-      project: toRef(project),
+      project: toRef(project, actualSchedule),
       stateReason: `Project created from "${plan.templateName}"`,
     });
     await auditor.record({
       input: {
-        dueDate: schedule.dueDate,
+        dueDate: actualSchedule.dueDate,
         projectName,
-        startDate: schedule.startDate,
+        startDate: actualSchedule.startDate,
         templateId: plan.templateId,
         templateName: plan.templateName,
         tier,

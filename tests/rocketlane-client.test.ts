@@ -437,6 +437,52 @@ describe("RocketlaneApiClient.assignPlaceholders", () => {
   });
 });
 
+describe("RocketlaneApiClient.getSchedule", () => {
+  it("returns the project's dates and its phase windows in order", async () => {
+    const { calls, fetchImpl } = fakeFetch(
+      { body: { dueDate: "2026-11-12", startDate: "2026-10-03" } },
+      {
+        body: {
+          data: [
+            {
+              dueDate: "2026-11-12",
+              phaseName: "Go-Live",
+              startDate: "2026-11-06",
+            },
+            {
+              dueDate: "2026-10-05",
+              phaseName: "Kickoff",
+              startDate: "2026-10-01",
+            },
+          ],
+          pagination: { hasMore: false },
+        },
+      }
+    );
+
+    const schedule = await client(fetchImpl).getSchedule("5000000226512");
+
+    expect(schedule).toEqual({
+      dueDate: "2026-11-12",
+      phases: [
+        { endDate: "2026-10-05", name: "Kickoff", startDate: "2026-10-01" },
+        { endDate: "2026-11-12", name: "Go-Live", startDate: "2026-11-06" },
+      ],
+      startDate: "2026-10-03",
+    });
+    const phases = calls.find((call) => call.url.pathname.endsWith("/phases"));
+    expect(phases?.url.searchParams.get("projectId")).toBe("5000000226512");
+  });
+
+  it("surfaces a failure instead of inventing dates", async () => {
+    const { fetchImpl } = fakeFetch({ status: 500 });
+
+    const error = await failureOf(client(fetchImpl).getSchedule("1"));
+
+    expect(error.retryable).toBe(true);
+  });
+});
+
 describe("live Rocketlane selection", () => {
   const store = createMemoryStore(() => new Date());
   const options = { clock: () => new Date(), newId: () => "id" };

@@ -11,6 +11,7 @@ export const STEP_LABELS: Record<string, string> = {
   create_channel: "Create Slack channel",
   assign_project_manager: "Assign Project Manager",
   create_project: "Create Rocketlane project",
+  read_schedule: "Read project schedule",
   escalate_call: "Escalate the call",
   evaluate_call: "Read the call result",
   invite_customer: "Invite the customer",

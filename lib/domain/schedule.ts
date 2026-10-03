@@ -1,4 +1,4 @@
-import type { OnboardingPlan, PhaseName } from "@/config/onboarding-plans";
+import type { OnboardingPlan } from "@/config/onboarding-plans";
 
 const MS_PER_DAY = 86_400_000;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -45,7 +45,7 @@ export function formatShortDate(isoDate: string): string {
 
 export interface PhaseTarget {
   endDate: string;
-  name: PhaseName;
+  name: string;
   startDate: string;
 }
 

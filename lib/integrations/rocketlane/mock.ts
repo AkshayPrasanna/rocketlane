@@ -7,12 +7,14 @@ import type {
   PlaceholderOutcome,
   RocketlaneClient,
   RocketlaneProject,
+  RocketlaneSchedule,
 } from "./types";
 
 export type RocketlaneOp =
   | "assignPlaceholders"
   | "createProject"
-  | "findProjects";
+  | "findProjects"
+  | "getSchedule";
 
 /** In-memory Rocketlane. Keeps every create request so tests can assert on the template used. */
 export class MockRocketlaneClient implements RocketlaneClient {
@@ -25,10 +27,19 @@ export class MockRocketlaneClient implements RocketlaneClient {
   }> = [];
   /** Roles the mock's projects do not have, so assigning them is reported as missing. */
   readonly rolesMissingFromTemplate = new Set<string>();
+  /**
+   * What Rocketlane says it scheduled, per project ID. Unlisted projects report the dates
+   * they were created with and no phase windows.
+   */
+  readonly schedules = new Map<string, RocketlaneSchedule>();
   /** Names Rocketlane would report for template IDs. An unlisted ID reports no name. */
   readonly templateNames = new Map<string, string>();
   /** When set, created projects report this template instead of the one requested. */
   reportedTemplateId: string | null | undefined;
+  private readonly requestedDates = new Map<
+    string,
+    { dueDate: string; startDate: string }
+  >();
   private counter = 0;
   private lostResponses = 0;
 
@@ -94,6 +105,10 @@ export class MockRocketlaneClient implements RocketlaneClient {
       url: `https://mock.rocketlane.test/projects/rl-${this.counter}`,
     };
     this.projects.push(project);
+    this.requestedDates.set(project.projectId, {
+      dueDate: input.dueDate,
+      startDate: input.startDate,
+    });
 
     if (this.lostResponses > 0) {
       this.lostResponses -= 1;
@@ -106,6 +121,21 @@ export class MockRocketlaneClient implements RocketlaneClient {
       );
     }
     return Promise.resolve(project);
+  }
+
+  getSchedule(projectId: string): Promise<RocketlaneSchedule> {
+    this.faults.check("getSchedule");
+    const scheduled = this.schedules.get(projectId);
+    if (scheduled) {
+      return Promise.resolve(scheduled);
+    }
+    const requested = this.requestedDates.get(projectId);
+    if (!requested) {
+      return Promise.reject(
+        new IntegrationError("rocketlane", "not_found", "Project not found")
+      );
+    }
+    return Promise.resolve({ ...requested, phases: [] });
   }
 
   assignPlaceholders(

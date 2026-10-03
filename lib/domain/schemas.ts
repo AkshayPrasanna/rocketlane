@@ -31,8 +31,17 @@ export const parsedDealSchema = z.object({
 });
 export type ParsedDeal = z.infer<typeof parsedDealSchema>;
 
+/** One phase's window, as Rocketlane reports it for the project. */
+export const projectPhaseSchema = z.object({
+  endDate: z.string(),
+  name: z.string(),
+  startDate: z.string(),
+});
+
 export const projectRefSchema = z.object({
   dueDate: z.string(),
+  /** Real phase windows read back from Rocketlane. Empty when they could not be read. */
+  phases: z.array(projectPhaseSchema).default([]),
   projectId: z.string(),
   projectUrl: z.string().nullable(),
   startDate: z.string(),

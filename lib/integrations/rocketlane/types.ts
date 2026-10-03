@@ -39,6 +39,16 @@ export interface PlaceholderOutcome {
   missing: string[];
 }
 
+/**
+ * The dates Rocketlane actually scheduled. A template's durations are in working days, so
+ * these differ from a plain calendar count and must be read back, not assumed.
+ */
+export interface RocketlaneSchedule {
+  dueDate: string;
+  phases: Array<{ endDate: string; name: string; startDate: string }>;
+  startDate: string;
+}
+
 export interface RocketlaneClient {
   /** Roles are matched by name. A role the project does not have is reported as missing. */
   assignPlaceholders(
@@ -52,4 +62,5 @@ export interface RocketlaneClient {
    */
   createProject(input: CreateProjectInput): Promise<RocketlaneProject>;
   findProjects(query: FindProjectsQuery): Promise<RocketlaneProject[]>;
+  getSchedule(projectId: string): Promise<RocketlaneSchedule>;
 }

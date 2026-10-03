@@ -94,7 +94,15 @@ export async function createChannel(
     dealId,
     plan,
     projectUrl: project.projectUrl,
-    schedule: computeSchedule(plan, project.startDate),
+    // The windows Rocketlane reported; the plan only when they could not be read.
+    schedule:
+      project.phases.length > 0
+        ? {
+            dueDate: project.dueDate,
+            phases: project.phases,
+            startDate: project.startDate,
+          }
+        : computeSchedule(plan, project.startDate),
   };
 
   try {

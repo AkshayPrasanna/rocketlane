@@ -58,6 +58,8 @@ Setup guides, in the order I did them:
 - [docs/rocketlane-template-spec.md](docs/rocketlane-template-spec.md): the two templates and the roles
 - [docs/rocketlane-automation-setup.md](docs/rocketlane-automation-setup.md): the overdue rules
 
+The requirements and workflow analysis (Part 1 of the assessment) is in [docs/part-1/](docs/part-1/Part-1_Requirements-and-Workflow-Analysis.pdf).
+
 | Command | What it does |
 | --- | --- |
 | `pnpm test` | Unit tests, then the workflow tests (about 25 seconds) |

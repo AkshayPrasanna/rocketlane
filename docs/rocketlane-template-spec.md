@@ -36,10 +36,25 @@ sets from `ROCKETLANE_OWNER_EMAIL` on every project.
 
 ## 2. Create the templates
 
-**Templates** → **New project template** → name it exactly as in the table → **Project** tab →
-**List view**. **Add New phase** with a name, **start-on** and **duration**, then **Add new
-task** under it with its own start-on, duration and assignee. In Rocketlane, start-on `1d` is
-the first day of the project.
+Nothing here exists yet. The phases and tasks are not built in, and the tasks inside Rocketlane's
+sample projects are unrelated. You create all of them, inside each template.
+
+Where to look (from Rocketlane's help article on project templates; I have not seen your
+screen):
+
+1. Left navigation → **Templates** → **New project template**. Make sure it is a *project*
+   template, not a *task* template.
+2. Name it exactly as in the table above. The template editor opens with three sections:
+   **Project**, **Spaces** and **Allocations**.
+3. Phases and tasks live only in the **Project** section → **List view**. They are not under
+   Spaces or Allocations.
+4. **Add New phase** with a name, **start-on** and **duration**, then **Add new task** under it
+   with its own start-on, duration and assignee. In Rocketlane, start-on `1d` is the first day
+   of the project.
+5. Save each section before moving to the next.
+
+If you are inside a project's plan page rather than a template, you are in the wrong place:
+that edits one customer's project, not the template.
 
 Use the same 15 tasks in both templates. Only the dates and the CSM role differ. The assignee is
 the role placeholder: `PM` = `Project Manager`, `CSM` = `Dedicated CSM` in the Enterprise

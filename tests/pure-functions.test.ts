@@ -260,6 +260,13 @@ describe("clarification email", () => {
       "no project or Slack channel has been created"
     );
   });
+
+  it("asks for a complete resend, because replies are not merged", () => {
+    const email = buildClarificationEmail([], "Deal closed: Acme");
+
+    expect(email.bodyText).toContain("send the deal email again");
+    expect(email.bodyText).not.toContain("reply to this email");
+  });
 });
 
 describe("AE directory", () => {

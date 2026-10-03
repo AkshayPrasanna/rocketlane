@@ -54,3 +54,7 @@ next-env.d.ts
 
 # Local backups of the Bolna agent made by scripts/bolna/setup.mjs
 .bolna-backups/
+
+# The take-home brief belongs to Rocketlane, not this repo
+docs/assignment.pdf
+docs/assignment.txt

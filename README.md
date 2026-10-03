@@ -1,66 +1,82 @@
-# Community Agent Template
+# NovaCRM onboarding agents
 
-Open source AI-powered Slack community management bot with a built-in Next.js admin panel. Uses Chat SDK, AI SDK, and Vercel Workflow.
+This is my submission for Rocketlane's Forward Deployed Engineer assessment. NovaCRM's CS team onboards every new customer by hand: someone reads the deal email, builds a project, opens a Slack channel and hopes the right template got picked. This repo does that work with a small set of agents, and keeps a person in the loop wherever the data or the AE's answer isn't clear.
 
-**Template.** Fork it, customize it, and deploy your own AI community manager with Vercel.
+Dashboard: https://rocketlane-8wnj.vercel.app (password protected)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fcommunity-agent-template&env=COMMUNITY_NAME,BETTER_AUTH_SECRET,SLACK_CLIENT_ID,SLACK_CLIENT_SECRET,SLACK_TEAM_ID&envDescription=COMMUNITY_NAME%3A%20Name%20in%20bot%20responses%20%7C%20BETTER_AUTH_SECRET%3A%20Run%20%60openssl%20rand%20-base64%2032%60%20%7C%20SLACK_CLIENT_ID%20%26%20SLACK_CLIENT_SECRET%3A%20From%20Slack%20app%20Basic%20Information%20%7C%20SLACK_TEAM_ID%3A%20Workspace%20ID.%20Add%20AI%20keys%20after%20deploy.&envLink=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fcommunity-agent-template%23configure-environment-variables&project-name=community-agent&repository-name=community-agent&stores=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22turso%22%7D%5D)
+## What happens when a deal closes
 
-## Features
+1. An AE emails the CS inbox with the customer, a contact, their own name and the Salesforce link.
+2. A small Apps Script in that inbox passes new deal emails to the app once a minute.
+3. The app checks the sender is a known AE, then an LLM reads the email and pulls out the fields. The email never says which plan the customer bought.
+4. Plain code checks every field. If something is missing or doesn't appear in the email, the AE gets a note asking for it and nothing else happens.
+5. The app phones the AE (through Bolna) and asks whether the customer is on Enterprise or Growth. Code reads the transcript and decides. A hedged answer, a voicemail or no answer means another try, and after the last try it goes to a person. It never guesses.
+6. Once the tier is confirmed, a Rocketlane project is created from the matching template: Enterprise is 30 days with a dedicated CSM, Growth is 14 days with a pooled one. The app reads back which template Rocketlane actually used and stops if it's the wrong one.
+7. A Slack channel is created and named for the customer and plan, with a topic, a welcome message and the real project dates.
+8. The AE gets a confirmation email. If the customer already has a project, or anything fails, the deal lands in an escalation queue instead.
 
-- **Community manager AI**—routes questions, welcomes members, surfaces unanswered threads, and flags issues to a lead. Powered by [AI SDK](https://ai-sdk.dev)
-- **Channel-aware routing**—configurable channel map so the bot knows your workspace layout and where to send people
-- **Durable workflows**—every LLM call and tool execution is a checkpoint with automatic retries via [Vercel Workflow](https://vercel.com/docs/workflow)
-- **Web search**—Anthropic's native web search tool, scoped to your community's domains via `SEARCH_DOMAINS`. Runs through [AI Gateway](https://vercel.com/docs/ai-gateway)
-- **Sandbox execution**—optional `bash`/`bash_batch` tools for running commands in a sandboxed environment via the [Knowledge Agent Template](https://github.com/vercel-labs/knowledge-agent-template) API
-- **Native Slack UI**—typing indicators, threaded replies, and DMs. Powered by [Chat SDK](https://chat-sdk.dev)
-- **Admin panel**—live dashboard with real-time streaming indicators, ViewTransition animations, activity feed, type filters, text search, inline conversation previews, activity trends, and settings page with channel overview
-- **Auth**—Slack OAuth via [Better Auth](https://www.better-auth.com) restricts the admin panel to workspace members
+Overdue tasks are handled by an automation inside Rocketlane, not by this code: one day overdue notifies the Project Manager, four days notifies the Project Owner. Rocketlane has no API for automations, so I set it up in the UI. The steps are in [docs/rocketlane-automation-setup.md](docs/rocketlane-automation-setup.md).
 
-## Quick start
+## What's real and what isn't
 
-Try the admin panel without setting up Slack:
+| | |
+| --- | --- |
+| Gmail | Real, polled by an Apps Script |
+| Email parsing | Real LLM (Gemini 2.5 Flash through Vercel AI Gateway) |
+| Phone call | Real, through Bolna |
+| Rocketlane | Real sandbox, project templates and API |
+| Slack | **Simulated.** The channel, topic, welcome message and invite are recorded in the app and shown on the dashboard. |
+| Storage | Upstash Redis |
+| Hosting | Vercel, with Vercel Workflow so a deal can wait on a phone call for minutes |
 
-1. Import the repo on [vercel.com/new](https://vercel.com/new)
-2. Add `ADMIN_DEMO_MODE=true`, `ALLOW_ADMIN_DEMO_MODE=true`, and a `COMMUNITY_NAME` env var (e.g. `DevHub`)
-3. Deploy—the dashboard works immediately with mock data
+## Where to look
 
-Demo mode requires both `ADMIN_DEMO_MODE=true` and `ALLOW_ADMIN_DEMO_MODE=true`. Together they bypass admin auth and use mock activity so people can open the deployed template before Slack is connected. Before connecting a real Slack workspace, remove both variables from Vercel Project Settings → Environment Variables (and from `.env.local`, if you set them locally).
+| Page | What it shows |
+| --- | --- |
+| Deals | Every deal and its state, updating live |
+| A deal | The steps it went through, with the reason for each decision, and what was created |
+| Escalations | Deals the agents stopped on, waiting for a person |
+| Slack (simulated) | What would have been posted |
+| Export audit log | The full log as JSONL |
 
-For the full Slack bot setup, see [docs/setup.md](docs/setup.md).
+## Running it yourself
 
-## Customization
+You need Node 22 (see `.node-version`) and pnpm 10.
 
-| What to change  | File                                                                         | Details                                   |
-| --------------- | ---------------------------------------------------------------------------- | ----------------------------------------- |
-| Bot personality | [`lib/agent.ts`](lib/agent.ts)                                               | System prompt and instructions           |
-| Channel map     | [`lib/channels.ts`](lib/channels.ts)                                         | Must match your Slack workspace          |
-| Welcome message | [`lib/welcome.ts`](lib/welcome.ts)                                           | Sent when new members join               |
-| Agent tools     | [`workflows/agent-workflow/tools.ts`](workflows/agent-workflow/tools.ts)     | Add, remove, or modify tools             |
-| Auth config     | [`lib/auth.ts`](lib/auth.ts)                                                 | Slack OAuth for the admin panel          |
-| Action type UI  | [`config/type-config.ts`](config/type-config.ts)                             | Icons, labels, and colors per action type |
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
 
-### Knowledge base
+You don't need any accounts to run the tests. Running it for real takes accounts at Upstash, Vercel (for the AI Gateway), Bolna and Rocketlane, plus the Gmail script. `.env.example` explains every variable. Each integration has a `*_MODE` setting that picks the live client or a test double, and everything defaults to the test doubles.
 
-This template is designed to work alongside the [Knowledge Agent Template](https://github.com/vercel-labs/knowledge-agent-template). Set `SAVOIR_API_URL` to connect to a deployed Savoir backend, giving the bot `bash` and `bash_batch` tools to search and read your community docs remotely. Without it, the bot still works using web search, channel routing, and the system prompt.
+Setup guides, in the order I did them:
 
-## Docs
+- [docs/gmail-setup.md](docs/gmail-setup.md): the inbox script
+- [docs/bolna-agent-setup.md](docs/bolna-agent-setup.md): the voice agent (`pnpm bolna:setup` applies it)
+- [docs/rocketlane-template-spec.md](docs/rocketlane-template-spec.md): the two templates and the roles
+- [docs/rocketlane-automation-setup.md](docs/rocketlane-automation-setup.md): the overdue rules
 
-- [Full setup guide](docs/setup.md)—Slack app, env vars, storage, OAuth, channels, deploy
-- [Architecture](docs/architecture.md)—how the bot works, key files, workflow constraints
-- [Admin panel](docs/admin-panel.md)—dashboard pages, live streaming, filters, Next.js patterns
-- [Testing](docs/testing.md)—test without Slack, simulate actions, mock data
+| Command | What it does |
+| --- | --- |
+| `pnpm test` | Unit tests, then the workflow tests (about 25 seconds) |
+| `pnpm test:live` | Checks against the real services. Read-only unless you opt in, see the notes in each file in `tests/live` |
+| `pnpm check` and `pnpm typecheck` | Lint and types |
+| `pnpm demo:status` | Prints every deal and its steps, straight from the store |
+| `pnpm demo:reset` | Clears deals and the audit log. Dry run unless you add `--yes` |
 
-## Built with
+## Tests
 
-- [Next.js 16](https://nextjs.org)—App Router with cacheComponents
-- [Chat SDK](https://chat-sdk.dev)—Slack adapter and bot framework
-- [AI SDK 6](https://ai-sdk.dev)—AI model integration with AI Gateway support
-- [Vercel Workflow](https://vercel.com/docs/workflow)—durable workflow execution
-- [Better Auth](https://www.better-auth.com)—Slack OAuth for the admin panel
-- [shadcn/ui](https://ui.shadcn.com)—component library
-- [Upstash Redis](https://upstash.com)—bot action logging, stats, and conversation storage
+About 500 unit tests and a handful of workflow tests run in CI on every push. They cover the happy path, validation (missing customer, missing or malformed contact email, bad links), template accuracy, a Rocketlane outage, an existing project, an unanswered call, a voicemail, hedged answers, duplicate emails, and an email that tries to talk the system into a plan tier. The Rocketlane and Bolna clients are tested with a fake HTTP layer that returns the response shapes I saw from the real services, and one test replays a real Bolna call. Slack is tested against the simulator.
 
-## License
+## How it's put together
 
-MIT
+[docs/architecture.md](docs/architecture.md) has the diagram, the split between what the LLM does and what code does, the guardrails, and what I'd change before running this for a real customer.
+
+## Things to know
+
+- Clarification isn't a conversation. If a field is missing the AE is asked to resend the whole email.
+- The templates run on Rocketlane's working days, so "30 days" lands about six weeks out. The app reads the real dates back from Rocketlane and uses those.
+- There is one AE in the directory, taken from environment variables.
+- Bolna doesn't sign its webhooks. The app uses a secret in the URL and Bolna's published IP addresses, and then fetches the call result from Bolna directly instead of trusting the webhook body.

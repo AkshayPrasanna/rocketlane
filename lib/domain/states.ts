@@ -33,7 +33,8 @@ const TRANSITIONS: Record<DealState, readonly DealState[]> = {
     "DUPLICATE_BLOCKED",
     "ESCALATED_TO_HUMAN",
   ],
-  // Re-entry happens only when the AE replies in-thread with the missing fields.
+  // Reserved for merging an in-thread reply. Today the AE resends the whole email, which
+  // starts a new deal, so nothing uses this move yet.
   NEEDS_CLARIFICATION: ["PARSED", "ESCALATED_TO_HUMAN"],
   VALIDATED: ["CALLING_AE", "ESCALATED_TO_HUMAN"],
   CALLING_AE: ["TIER_CONFIRMED", "CALL_RETRY", "ESCALATED_TO_HUMAN"],

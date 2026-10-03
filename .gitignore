@@ -58,3 +58,6 @@ next-env.d.ts
 # The take-home brief belongs to Rocketlane, not this repo
 docs/assignment.pdf
 docs/assignment.txt
+
+# Part 1 of the submission is kept locally, not in the repo
+docs/part-1/

@@ -13,16 +13,29 @@ const CONFIRM_ENTERPRISE: CallScript = {
 const NO_ANSWER: CallScript = { kind: "terminal", outcome: "no_answer" };
 
 /** Real sleeps, kept short so the suite stays fast. */
-const FAST_TIMERS = {
-  CALL_RESULT_TIMEOUT_SECONDS: "2",
+const FAST_RETRIES = {
   CALL_RETRY_DELAY_SECONDS: "1",
   RETRY_BASE_DELAY_SECONDS: "1",
 };
 
+/**
+ * How long a workflow waits for the call-result webhook. Long by default: a test that sends the
+ * webhook itself must never race this timer, or a slow machine turns it into a flaky failure.
+ * Only the test about a webhook that never arrives needs it short.
+ */
+const SIGNALLED_RESULT_TIMEOUT_SECONDS = "30";
+const MISSING_WEBHOOK_TIMEOUT_SECONDS = "2";
+
 let h: Harness;
 
-function useHarness(voice: CallScript[]) {
-  h = createHarness({ env: FAST_TIMERS, voice });
+function useHarness(
+  voice: CallScript[],
+  resultTimeoutSeconds = SIGNALLED_RESULT_TIMEOUT_SECONDS
+) {
+  h = createHarness({
+    env: { ...FAST_RETRIES, CALL_RESULT_TIMEOUT_SECONDS: resultTimeoutSeconds },
+    voice,
+  });
   useStepsFor(h.deps);
 }
 
@@ -60,7 +73,7 @@ describe("onboarding workflow on the real Workflow runtime", () => {
   });
 
   it("falls back to pulling the result when the webhook never arrives", async () => {
-    useHarness([CONFIRM_ENTERPRISE]);
+    useHarness([CONFIRM_ENTERPRISE], MISSING_WEBHOOK_TIMEOUT_SECONDS);
     const { run } = await startWorkflow();
 
     // No webhook is sent: the race against the timer ends the wait, and the evaluate step

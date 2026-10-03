@@ -358,19 +358,19 @@ describe("RocketlaneApiClient.findProjects", () => {
 });
 
 describe("RocketlaneApiClient.assignPlaceholders", () => {
+  // The shape a live account returns: one entry per template role, named after the role.
   const PLACEHOLDERS = {
-    data: [
+    placeholders: [
       {
-        placeholderId: 11,
-        placeholderName: "Project Manager",
-        role: { roleId: 1, roleName: "Project Manager" },
+        placeholder: { placeholderId: 11, placeholderName: "Project Manager" },
+        placeholderStatus: "UNASSIGNED",
       },
       {
-        placeholderId: 12,
-        placeholderName: "Dedicated CSM",
-        role: { roleId: 2, roleName: "Dedicated CSM" },
+        placeholder: { placeholderId: 12, placeholderName: "Dedicated CSM" },
+        placeholderStatus: "UNASSIGNED",
       },
     ],
+    projectId: 55,
   };
   const assigned = (status: string) => ({
     body: {

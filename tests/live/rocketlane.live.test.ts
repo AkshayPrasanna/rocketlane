@@ -80,17 +80,18 @@ describe("the real Rocketlane templates", () => {
         const client = liveClient();
         const stamp = new Date().toISOString().slice(0, 10);
 
+        const began = Date.now();
         const project = await client.createProject({
           customerName: "NovaCRM Template Check",
           dueDate: stamp,
           externalReferenceId: `verify-${tier}-${Date.now()}`,
           ownerEmail: ROCKETLANE_OWNER_EMAIL,
-          projectName: `[verify] ${plan.label} template check ${stamp}`,
+          projectName: `${plan.label} template check ${stamp}`,
           startDate: stamp,
           templateId,
         });
         console.log(
-          `${plan.label}: project ${project.projectId} built from "${project.templateName}" (${project.templateId})`
+          `${plan.label}: project ${project.projectId} built from "${project.templateName}" (${project.templateId}) in ${Date.now() - began} ms`
         );
 
         expect(project.templateId).toBe(templateId);

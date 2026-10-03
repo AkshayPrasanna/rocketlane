@@ -10,8 +10,12 @@ import type {
 } from "./types";
 
 const DEFAULT_BASE_URL = "https://api.rocketlane.com/api/1.0";
-/** Building a project from a template creates every task, so allow it longer than a read. */
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 20_000;
+/**
+ * Building a project from a template creates every task and took 20-25 seconds against a real
+ * account, so it gets far longer than a read.
+ */
+const CREATE_TIMEOUT_MS = 60_000;
 const PAGE_SIZE = 100;
 const MAX_PAGES = 5;
 const MS_PER_SECOND = 1000;
@@ -48,14 +52,20 @@ const projectListSchema = z.looseObject({
     .nullish(),
 });
 
-/** A project with no template roles comes back as just `{ projectId }`, hence the default. */
+/**
+ * What get-placeholders really returns (observed against a live account; the published docs
+ * show a different `data` array). A project with no template roles comes back as just
+ * `{ projectId }`, hence the default.
+ */
 const placeholderListSchema = z.looseObject({
-  data: z
+  placeholders: z
     .array(
       z.looseObject({
-        placeholderId: idSchema,
-        placeholderName: z.string().nullish(),
-        role: z.looseObject({ roleName: z.string().nullish() }).nullish(),
+        placeholder: z.looseObject({
+          placeholderId: idSchema,
+          placeholderName: z.string(),
+        }),
+        placeholderStatus: z.string().nullish(),
       })
     )
     .default([]),
@@ -101,6 +111,7 @@ export interface RocketlaneApiOptions {
 interface RequestOptions {
   body?: unknown;
   query?: Record<string, string>;
+  timeoutMs?: number;
 }
 
 function normalise(name: string | null | undefined): string {
@@ -126,6 +137,7 @@ export class RocketlaneApiClient implements RocketlaneClient {
     }
 
     const created = await this.request("POST", "/projects", projectSchema, {
+      timeoutMs: CREATE_TIMEOUT_MS,
       body: {
         autoCreateCompany: true,
         customer: { companyName: input.customerName },
@@ -181,7 +193,7 @@ export class RocketlaneApiClient implements RocketlaneClient {
     }
     const base = `/projects/${encodeURIComponent(projectId)}`;
 
-    const { data: placeholders } = await this.request(
+    const { placeholders } = await this.request(
       "POST",
       `${base}/get-placeholders`,
       placeholderListSchema,
@@ -195,14 +207,13 @@ export class RocketlaneApiClient implements RocketlaneClient {
     }> = [];
     for (const { email, roleName } of assignments) {
       const wanted = normalise(roleName);
+      // A placeholder is named after its role.
       const match = placeholders.find(
-        (placeholder) =>
-          normalise(placeholder.role?.roleName) === wanted ||
-          normalise(placeholder.placeholderName) === wanted
+        ({ placeholder }) => normalise(placeholder.placeholderName) === wanted
       );
       if (match) {
         toSend.push({
-          placeholderId: Number(match.placeholderId),
+          placeholderId: Number(match.placeholder.placeholderId),
           roleName,
           user: { emailId: email },
         });
@@ -285,10 +296,11 @@ export class RocketlaneApiClient implements RocketlaneClient {
     method: "GET" | "POST",
     path: string,
     schema: z.ZodType<T>,
-    { body, query }: RequestOptions = {}
+    { body, query, timeoutMs: requestTimeoutMs }: RequestOptions = {}
   ): Promise<T> {
     const baseUrl = this.options.baseUrl ?? DEFAULT_BASE_URL;
-    const timeoutMs = this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    const timeoutMs =
+      requestTimeoutMs ?? this.options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const search = query ? `?${new URLSearchParams(query).toString()}` : "";
     const doFetch = this.options.fetchImpl ?? fetch;
 
